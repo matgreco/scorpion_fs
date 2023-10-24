@@ -1,0 +1,76 @@
+begin_operator
+pickup b1
+0
+3
+0 1 0 1
+0 4 0 1
+0 3 2 0
+1
+end_operator
+begin_operator
+pickup b2
+0
+3
+0 1 0 1
+0 0 0 1
+0 2 2 0
+1
+end_operator
+begin_operator
+putdown b1
+0
+3
+0 1 -1 0
+0 4 -1 0
+0 3 0 2
+1
+end_operator
+begin_operator
+putdown b2
+0
+3
+0 1 -1 0
+0 0 -1 0
+0 2 0 2
+1
+end_operator
+begin_operator
+stack b1 b2
+0
+4
+0 1 -1 0
+0 4 -1 0
+0 0 0 1
+0 3 0 1
+1
+end_operator
+begin_operator
+stack b2 b1
+0
+4
+0 1 -1 0
+0 4 0 1
+0 0 -1 0
+0 2 0 1
+1
+end_operator
+begin_operator
+unstack b1 b2
+0
+4
+0 1 0 1
+0 4 0 1
+0 0 -1 0
+0 3 1 0
+1
+end_operator
+begin_operator
+unstack b2 b1
+0
+4
+0 1 0 1
+0 4 -1 0
+0 0 0 1
+0 2 1 0
+1
+end_operator
