@@ -25,6 +25,7 @@ def default_gnn_preprocessor(threshold, retries, model_path, use_relaxed_plan, u
     # Original step
     input = sys.stdin
     save_to_workspace(input, "original.sas")
+    copy_file(ORIGINAL_SAS, WORKSPACE_SAS) # MG: copy the file to the new location (because change of the folder structure)
     with open(WORKSPACE_SAS, "r") as f:
         workspace_original_sas = f.read()
 

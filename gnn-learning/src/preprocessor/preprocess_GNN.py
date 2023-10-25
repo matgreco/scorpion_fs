@@ -69,6 +69,11 @@ def run_gnn_preprocessor(sas_path, output_dir, model_path, threshold, retries=No
     print("ACTIONS probabilities")
     print(actions_probabilities)
 
+    priorities_str_list = [str(x[0]) for x in actions_probabilities.tolist()]
+    with open("workspace/action_probabilities.txt", "w") as f:
+        f.write("\n".join(priorities_str_list))
+        print("ARCHIVO DE PRIORIDADES GUARDADO")
+
     print("*******************************************************************")
     print("default_predictions")
     print(default_predictions)

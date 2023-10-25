@@ -29,7 +29,7 @@ def main():
 
     ROOT = os.path.dirname(os.path.abspath(__file__))
     REPO_GNN_LEARNING = f"{ROOT}/gnn-learning"
-    SCORPION_PATH = f"{ROOT}/scorpion"
+    SCORPION_PATH = f"{ROOT}"
 
     DK_DIR_FILE = args.domain_knowledge
     DOMAIN = args.domain
