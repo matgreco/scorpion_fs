@@ -58,7 +58,7 @@ def main():
     # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
     preprocessor_settings = "gnn-retries,2,gnn-threshold,0.5,model-path,extracted/DK/model.pt"
 
-
+    """
     subprocess.check_call(
         [f'{SCORPION_PATH}/fast-downward.py']
         + extra_flags + [
@@ -70,6 +70,19 @@ def main():
             '--search-time-limit', '500',
             DOMAIN,
             PROBLEM])
-
+    """
+    subprocess.check_call(
+        [f'{SCORPION_PATH}/fast-downward.py']
+        + extra_flags + [
+            '--evaluator', 'hprio=opprio()',
+            '--search', 'lazy_greedy([hprio])',
+            '--keep-sas-file',
+            '--transform-task-options', preprocessor_settings,
+            '--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
+            '--overall-time-limit', '2400',
+            '--search-time-limit', '500',
+            DOMAIN,
+            PROBLEM])
+    
 if __name__ == "__main__":
     main()

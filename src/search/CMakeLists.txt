@@ -1057,6 +1057,20 @@ create_fast_downward_library(
 )
 
 create_fast_downward_library(
+    NAME operators_priorities
+    HELP "Plugin containing the code for operator priority heuristic"
+    SOURCES
+        operators_priorities/operators_priorities
+    DEPENDS
+        lp_solver
+        sampling
+        successor_generator
+        task_properties
+)
+
+
+
+create_fast_downward_library(
     NAME sccs
     HELP "Algorithm to compute the strongly connected components (SCCs) of a "
          "directed graph."
