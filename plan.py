@@ -56,9 +56,9 @@ def main():
     
     model_path = os.path.join(dk_folder, "model.pt")
     # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
-    preprocessor_settings = "gnn-retries,2,gnn-threshold,0.5,model-path,extracted/DK/model.pt"
+    preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
 
-    
+    """
     subprocess.check_call(
         [f'{SCORPION_PATH}/fast-downward.py']
         + extra_flags + [
@@ -71,19 +71,25 @@ def main():
             DOMAIN,
             PROBLEM])
     """
+    
     subprocess.check_call(
         [f'{SCORPION_PATH}/fast-downward.py']
         + extra_flags + [
-            '--evaluator', 'hprio=opprio()',
-            '--search', 'lazy_greedy([hprio])',
             '--keep-sas-file',
             '--transform-task-options', preprocessor_settings,
             '--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
             '--overall-time-limit', '2400',
             '--search-time-limit', '500',
+            '--overall-memory-limit', '8G',
             DOMAIN,
-            PROBLEM])
-    """
-    
+            PROBLEM,
+            '--evaluator', 'opp=opprio(path_likelihood=1)',
+            '--search', "eager_greedy([opp])",
+            ])
+#./fast-downward.py benchmarks/blocksworld/domain.pddl benchmarks/blocksworld/training/easy/p10.pddl 
+# --evaluator "hprio=opprio()" --search "eager_greedy([hprio])"
+
+#
+
 if __name__ == "__main__":
     main()

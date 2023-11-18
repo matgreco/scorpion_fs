@@ -20,13 +20,13 @@ class OpPrioritiesHeuristic : public Heuristic {
     PerStateInformation<float> priority; 
     PerStateInformation<float> cache_heuristics_priority;    
     PerStateInformation<const State*> parent; // the parent state
-   
-    //unordered_map<int, float> 
-       
+    PerStateInformation<int> path_depth;
+    int type_opprior; // the type of the op priority heuristic (instant or path)
 
 protected:
     virtual int compute_heuristic(const State &ancestor_state) override;
     float path_heuristic(const State &state);
+    float path_heuristic_normalized(const State &state);
     float instant_heuristic(const State &state);
 
 public:

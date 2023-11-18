@@ -141,7 +141,7 @@ begin_goal
 7 0
 8 0
 end_goal
-26
+32
 begin_operator
 pickup b1
 0
@@ -235,6 +235,16 @@ stack b1 b3
 1
 end_operator
 begin_operator
+stack b1 b4
+0
+4
+0 2 -1 0
+0 7 -1 0
+0 1 0 1
+0 5 0 3
+1
+end_operator
+begin_operator
 stack b2 b1
 0
 4
@@ -255,6 +265,16 @@ stack b2 b3
 1
 end_operator
 begin_operator
+stack b2 b4
+0
+4
+0 2 -1 0
+0 0 -1 0
+0 1 0 1
+0 3 0 3
+1
+end_operator
+begin_operator
 stack b3 b1
 0
 4
@@ -262,6 +282,16 @@ stack b3 b1
 0 7 0 1
 0 8 -1 0
 0 6 0 1
+1
+end_operator
+begin_operator
+stack b3 b2
+0
+4
+0 2 -1 0
+0 0 0 1
+0 8 -1 0
+0 6 0 2
 1
 end_operator
 begin_operator
@@ -282,6 +312,16 @@ stack b4 b1
 0 7 0 1
 0 1 -1 0
 0 4 0 1
+1
+end_operator
+begin_operator
+stack b4 b2
+0
+4
+0 2 -1 0
+0 0 0 1
+0 1 -1 0
+0 4 0 2
 1
 end_operator
 begin_operator
@@ -345,6 +385,16 @@ unstack b2 b3
 1
 end_operator
 begin_operator
+unstack b2 b4
+0
+4
+0 2 0 1
+0 0 0 1
+0 1 -1 0
+0 3 3 0
+1
+end_operator
+begin_operator
 unstack b3 b1
 0
 4
@@ -382,6 +432,16 @@ unstack b4 b1
 0 7 -1 0
 0 1 0 1
 0 4 1 0
+1
+end_operator
+begin_operator
+unstack b4 b2
+0
+4
+0 2 0 1
+0 0 -1 0
+0 1 0 1
+0 4 2 0
 1
 end_operator
 begin_operator
