@@ -12,7 +12,7 @@
 #include <memory>
 
 namespace OpPriorities {
-//class OpPrioritiesFunction;
+class OpPrioritiesFunction;
 
 class OpPrioritiesHeuristic : public Heuristic {
     //std::unique_ptr<OpPrioritiesFunction> function;
@@ -39,6 +39,9 @@ public:
                                         OperatorID op_id,
                                         const State &state) override;
 };
+
+extern void OpPrioritiesFunction_options_to_feature(plugins::Feature &feature);
+
 }
 
 #endif

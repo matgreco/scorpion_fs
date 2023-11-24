@@ -43,6 +43,7 @@ void OpPrioritiesHeuristic::get_path_dependent_evaluators(
 }
 OpPrioritiesHeuristic::~OpPrioritiesHeuristic() {
 }
+/*
 // heuristic which return the multiplication of the priorities in the path
 float OpPrioritiesHeuristic::path_heuristic(const State &state) {
     //cout << "++++ PATH HEURISTIC" << cache_heuristics_priority[*parent[state]] << " + " << std::log(priority[state]) << endl;
@@ -64,25 +65,11 @@ float OpPrioritiesHeuristic::instant_heuristic(const State &state) {
     //cout << "instante HEURISTIC" << endl;
     return round((1-priority[state])*10000);
 }
-
-// generate a new priority function which use the priority of the parent
-
+*/
 int OpPrioritiesHeuristic::compute_heuristic(const State &state) {
-    //cout << "compute HEURISTIC" << endl;
-    //return instant_heuristic(state);
-    //return round(path_heuristic(state)*10000);
-    //cout << "-- Computando h de state " << round(path_heuristic(state) ) << endl;
-    int h_value;
-    if(type_opprior == 0)
-        h_value = lround((path_heuristic_normalized(state)*10000.0));
-    else if (type_opprior == 1)
-        h_value = lround(path_heuristic(state)*10000.0);
-    else 
-        h_value = lround(instant_heuristic(state));
-    //cout << "compute heuristic state " << state.get_id() << " - h: " << h_value << endl;
-
-    return h_value;
+    return lround(cache_heuristics_priority[state]*10000);
 }
+
 void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ OP PRIORITIES HAS " << op_priorities.size()  << " OPERATORS." << endl;
     cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ THE SAS TASK HAS " << initial_state.get_task().get_operators().size() << "OPERATORS" << endl;
@@ -99,19 +86,24 @@ void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, O
     //cout << "NOTIFY STATE TRANSITION HEURISTIC" << endl;
     // 1) PUT THE COMPUTE HEURISTIC CODE HERE
     priority[state] = op_priorities[op_id.get_index()];
+    path_depth[state] = path_depth[parent_state]+1;
 
+    float value = 0; 
     if(type_opprior == 0){
-
+        value = (-1*(cache_heuristics_priority[parent_state] - std::log(op_priorities[op_id.get_index()])))/path_depth[state];
     }
-    else if (type_opprior == 1)
-        h_value = lround(path_heuristic(state)*10000.0);
-    else 
-        h_value = lround(instant_heuristic(state));
-
+    else if (type_opprior == 1){
+        value = -1*(cache_heuristics_priority[parent_state] - std::log(op_priorities[op_id.get_index()]));
+    }
+    else if (type_opprior == 2){
+        value = op_priorities[op_id.get_index()];
+    }
+    if (cache_heuristics_priority[state] < value) 
+        cache_heuristics_priority[state] = value;
     // 2) CACHE HEURISTIC PRIORITY AS THE FINAL HEURISTIC FOR THE STATE
     // 3) UPDATE THE PRIORITY OF THE STATE IF THE NEW PRIORITY IS LOWER (AS HEURISTIC VALUE, LOWER IS BETTER)
     // 4) OPTIONS (AS I WRITED IN THE FEATURE METHOD)
-    path_depth[state] = path_depth[parent_state]+1;
+    
     
     //priority[state] = op_priorities[op_id.get_index()];
     //parent[state] = &parent_state;
@@ -131,15 +123,9 @@ public:
         add_option<int>(
             "path_likelihood",
             "instant (consider the likelihood of the operator) or path (consider the log-likelihood of all the path)",
-            "0",
-            plugins::Bounds("0", "2"));
-        
-        add_option<int>(
-            "value",
-            "the constant value--",
-            "1",
-            plugins::Bounds("0", "infinity"));
-        
+            "0");
+            //plugins::Bounds("0", "2"));
+    
         Heuristic::add_options_to_feature(*this);
 
     }
