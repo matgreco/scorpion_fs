@@ -1,5 +1,5 @@
-#ifndef POTENTIALS_POTENTIAL_HEURISTIC_H
-#define POTENTIALS_POTENTIAL_HEURISTIC_H
+#ifndef OPERATORS_PRIORITIES_OPERATORS_PRIORITIES_H
+#define OPERATORS_PRIORITIES_OPERATORS_PRIORITIES_H
 
 #include "../heuristic.h"
 
@@ -9,6 +9,8 @@
 #include "../per_state_bitset.h"
 
 
+#include "priorities_strategy.h"
+
 #include <memory>
 
 namespace OpPriorities {
@@ -16,13 +18,13 @@ class OpPrioritiesFunction;
 
 class OpPrioritiesHeuristic : public Heuristic {
     //std::unique_ptr<OpPrioritiesFunction> function;
-    std::vector<float> op_priorities;
+    std::vector<double> op_priorities;
     PerStateInformation<float> priority; 
     PerStateInformation<float> cache_heuristics_priority;    
     PerStateInformation<const State*> parent; // the parent state
     PerStateInformation<int> path_depth;
-    int type_opprior; // the type of the op priority heuristic (instant or path)
-
+    std::shared_ptr<OpPriorities::PrioritiesStrategy> priority_strategy;
+    
 protected:
     virtual int compute_heuristic(const State &ancestor_state) override;
     float path_heuristic(const State &state);

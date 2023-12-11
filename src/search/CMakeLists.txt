@@ -1061,6 +1061,9 @@ create_fast_downward_library(
     HELP "Plugin containing the code for operator priority heuristic"
     SOURCES
         operators_priorities/operators_priorities
+        operators_priorities/priorities_strategy
+        operators_priorities/strategy_path
+        operators_priorities/strategy_instant
     DEPENDS
         lp_solver
         sampling

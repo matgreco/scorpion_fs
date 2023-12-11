@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument("domain", help="path to domain file")
     parser.add_argument("problem", help="path to problem file")
     parser.add_argument("plan", help="path to output plan file")
+    #parser.add_argument("priority", help="Type of priority")
     return parser.parse_args()
 
 
@@ -83,7 +84,7 @@ def main():
             '--overall-memory-limit', '8G',
             DOMAIN,
             PROBLEM,
-            '--evaluator', 'opp=opprio(path_likelihood=1)',
+            '--evaluator', 'opp=operator_priorities(priority=path())',
             '--search', "eager_greedy([opp])",
             ])
 #./fast-downward.py benchmarks/blocksworld/domain.pddl benchmarks/blocksworld/training/easy/p10.pddl 
