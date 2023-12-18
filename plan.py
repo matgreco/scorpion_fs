@@ -20,12 +20,13 @@ def parse_args():
     parser.add_argument("domain", help="path to domain file")
     parser.add_argument("problem", help="path to problem file")
     parser.add_argument("plan", help="path to output plan file")
-    #parser.add_argument("priority", help="Type of priority")
+    parser.add_argument("--priority", help="Type of priority", default="path")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+
     # best_model_path = os.join.path(args.dk, "best_model/model.pt")
 
     ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +37,9 @@ def main():
     DOMAIN = args.domain
     PROBLEM = args.problem
     PLAN_OUT = args.plan
+    priority_type = args.priority
+
+    assert(priority_type in ["instant", "path", "path_norm"])
 
     dk_folder = f"extracted"
 
@@ -84,9 +88,10 @@ def main():
             '--overall-memory-limit', '8G',
             DOMAIN,
             PROBLEM,
-            '--evaluator', 'opp=operator_priorities(priority=path())',
+            '--evaluator', f'opp=operator_priorities(priority={priority_type}())',
             '--search', "eager_greedy([opp])",
             ])
+#priority could be [instant, path, path_norm]
 #./fast-downward.py benchmarks/blocksworld/domain.pddl benchmarks/blocksworld/training/easy/p10.pddl 
 # --evaluator "hprio=opprio()" --search "eager_greedy([hprio])"
 

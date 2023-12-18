@@ -17,11 +17,10 @@ namespace OpPriorities {
 class OpPrioritiesFunction;
 
 class OpPrioritiesHeuristic : public Heuristic {
-    //std::unique_ptr<OpPrioritiesFunction> function;
     std::vector<double> op_priorities;
-    PerStateInformation<float> priority; 
-    PerStateInformation<float> cache_heuristics_priority;    
-    PerStateInformation<const State*> parent; // the parent state
+    //PerStateInformation<float> priority; 
+    PerStateInformation<double> cache_heuristics_priority;    
+    //PerStateInformation<const State*> parent; // the parent state
     PerStateInformation<int> path_depth;
     std::shared_ptr<OpPriorities::PrioritiesStrategy> priority_strategy;
     

@@ -41,17 +41,10 @@ void OpPrioritiesHeuristic::get_path_dependent_evaluators(
 
 OpPrioritiesHeuristic::~OpPrioritiesHeuristic() {
 }
-/*
-float OpPrioritiesHeuristic::path_heuristic_normalized(const State &state) {
-    //cout << "PATH HEURISTIC NORM en state " << endl;
-    //cache_heuristics_priority[state] = cache_heuristics_priority[*parent[state]] * priority[state] ;
-    cache_heuristics_priority[state] = cache_heuristics_priority[*parent[state]] + std::log(priority[state]) ;
-    return -1*cache_heuristics_priority[state]/path_depth[state];
-}
-*/
 
 int OpPrioritiesHeuristic::compute_heuristic(const State &state) {
-    double value = cache_heuristics_priority[state];
+    int value = priority_strategy->compute_heuristic_from_priority(cache_heuristics_priority[state], path_depth[state]);
+    cout << "heuristic = " << value << endl;
     return value;
 }
 
@@ -60,23 +53,18 @@ void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ THE SAS TASK HAS " << initial_state.get_task().get_operators().size() << "OPERATORS" << endl;
     assert( op_priorities.size() != initial_state.get_task().get_operators().size());
 
-    priority[initial_state] = 1.0;
+    //priority[initial_state] = 1.0;
     path_depth[initial_state] = 1;   
     cache_heuristics_priority[initial_state] = 0.0;
-    parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
+    //parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
     cout << "OK";
 }
 
 void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, OperatorID op_id, const State &state) {
-    //cout << "NOTIFY STATE TRANSITION HEURISTIC" << endl;
-    // 1) PUT THE COMPUTE HEURISTIC CODE HERE
-    //priority[state] = op_priorities[op_id.get_index()];
     path_depth[state] = path_depth[parent_state]+1;
-
-    double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()], path_depth[state]);  //<--- cambiar
+    //cout << "-- op prior " << op_priorities[op_id.get_index()] << endl;
+    double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()]);  //<--- cambiar
     cache_heuristics_priority[state] = value;
-
-    //float value = priorities_strategy->compute_value();
 
     /*
     float value = 0; 

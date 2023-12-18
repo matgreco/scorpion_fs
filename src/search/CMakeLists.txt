@@ -1062,8 +1062,9 @@ create_fast_downward_library(
     SOURCES
         operators_priorities/operators_priorities
         operators_priorities/priorities_strategy
-        operators_priorities/strategy_path
         operators_priorities/strategy_instant
+        operators_priorities/strategy_path
+        operators_priorities/strategy_path_normalized
     DEPENDS
         lp_solver
         sampling
