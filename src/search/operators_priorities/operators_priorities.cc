@@ -44,7 +44,7 @@ OpPrioritiesHeuristic::~OpPrioritiesHeuristic() {
 
 int OpPrioritiesHeuristic::compute_heuristic(const State &state) {
     int value = priority_strategy->compute_heuristic_from_priority(cache_heuristics_priority[state], path_depth[state]);
-    cout << "heuristic = " << value << endl;
+    //cout << "heuristic = " << value << endl;
     return value;
 }
 
@@ -57,7 +57,6 @@ void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     path_depth[initial_state] = 1;   
     cache_heuristics_priority[initial_state] = 0.0;
     //parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
-    cout << "OK";
 }
 
 void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, OperatorID op_id, const State &state) {

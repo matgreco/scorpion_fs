@@ -96,7 +96,7 @@ def main():
             DOMAIN,
             PROBLEM,
             '--evaluator', f'opp=operator_priorities(priority={priority_type}())',
-            '--search', "eager_greedy([opp])",
+            '--search', "eager_greedy([opp, ff()])",
             ])
 #priority could be [instant, path, path_norm]
 #./fast-downward.py benchmarks/blocksworld/domain.pddl benchmarks/blocksworld/training/easy/p10.pddl 
