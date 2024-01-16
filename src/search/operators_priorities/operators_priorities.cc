@@ -26,11 +26,7 @@ OpPrioritiesHeuristic::OpPrioritiesHeuristic(const plugins::Options &opts)  : He
         op_priorities.push_back(oppriority);       
         ++i;
     }
-    /*
-    for(int i=0; i<op_priorities.size(); i++ ){
-        cout << op_priorities[i] << endl;
-    }
-    */
+    
     cout << "*********************************** OP PRIORITIES TYPE " << priority_strategy->get_name() << endl;
 }
 
@@ -65,19 +61,6 @@ void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, O
     double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()]);  //<--- cambiar
     cache_heuristics_priority[state] = value;
 
-    /*
-    float value = 0; 
-    if(type_opprior == 0){
-        value = (-1*(cache_heuristics_priority[parent_state] - std::log(op_priorities[op_id.get_index()])))/path_depth[state];
-    }
-    else if (type_opprior == 1){
-        value = -1*(cache_heuristics_priority[parent_state] - std::log(op_priorities[op_id.get_index()]));
-    }
-    else if (type_opprior == 2){
-        value = op_priorities[op_id.get_index()];
-    }
-    */
-
     if (cache_heuristics_priority[state] < value) 
         cache_heuristics_priority[state] = value;
     
@@ -85,12 +68,6 @@ void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, O
     // 3) UPDATE THE PRIORITY OF THE STATE IF THE NEW PRIORITY IS LOWER (AS HEURISTIC VALUE, LOWER IS BETTER)
     // 4) OPTIONS (AS I WRITED IN THE FEATURE METHOD)
     
-    
-    //priority[state] = op_priorities[op_id.get_index()];
-    
-    //parent[state] = &parent_state. ;
-    
-    //cout << "Notificando " << state.get_id() << "el operador id " << op_id.get_index() << ":" << priority[state] << endl;     
 }   
 }
 

@@ -299,6 +299,14 @@ create_fast_downward_library(
 )
 
 create_fast_downward_library(
+    NAME random_heuristic_evaluator
+    HELP "The random heuristic"
+    SOURCES
+        heuristics/random_heuristic
+)
+
+
+create_fast_downward_library(
     NAME g_evaluator
     HELP "The g-evaluator"
     SOURCES
@@ -1071,6 +1079,7 @@ create_fast_downward_library(
         successor_generator
         task_properties
 )
+
 
 
 
