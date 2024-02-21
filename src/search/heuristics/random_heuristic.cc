@@ -26,7 +26,6 @@ int RandomHeuristic::compute_heuristic(const State &state) {
     }
 }
 
-
 class RandomHeuristicFeature : public plugins::TypedFeature<Evaluator, RandomHeuristic> {
 public:
     RandomHeuristicFeature() : TypedFeature("random_heuristic") {

@@ -24,8 +24,10 @@ def parse_args():
     parser.add_argument("plan", help="path to output plan file")
     parser.add_argument("time_limit")
     parser.add_argument("memory_limit")
-    parser.add_argument("--priority", help="Type of priority", default="path")
-    
+    parser.add_argument("--priority", help="Type of priority", default=None)
+    parser.add_argument("--search", help="Search algorithm command", default="eager_greedy()")
+    # eager_greedy([ff(), opprio ])
+    # eager_greedy(ff())
     return parser.parse_args()
 
 
@@ -44,48 +46,28 @@ def main():
     PLAN_OUT = args.plan
     priority_type = args.priority
 
-    assert(priority_type in ["instant", "path", "path_norm"])
+    assert(priority_type in [None, "instant", "path", "path_norm"])
 
-    dk_folder = f"extracted"
+    if priority_type is not None: #random_heuristic(max_value=100)
+        dk_folder = f"extracted"
 
-    # uncompress domain knowledge file
-    with tarfile.open(args.domain_knowledge, "r:gz") as tar:
-        if os.path.exists(dk_folder):
-            shutil.rmtree(dk_folder)
-        tar.extractall(dk_folder)
+        # uncompress domain knowledge file
+        with tarfile.open(args.domain_knowledge, "r:gz") as tar:
+            if os.path.exists(dk_folder):
+                shutil.rmtree(dk_folder)
+            tar.extractall(dk_folder)
 
-
-    
-    # DK_DIR = f'{ROOT}/DK'
-
-    # if os.path.exists(DK_DIR):
-    #     shutil.rmtree(DK_DIR)
-    # os.mkdir(DK_DIR)
-
-    # shutil.unpack_archive(DK_DIR_FILE, DK_DIR ,'zip')
-    
-    model_path = os.path.join(dk_folder, "model.pt")
-    # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
-    preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
+ 
+        model_path = os.path.join(dk_folder, "model.pt")
+        # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
+        preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
 
     print("Current Path:", os.getcwd())
     print("Repo GNN Learning", REPO_GNN_LEARNING)
-    """
-    subprocess.check_call(
-        [f'{SCORPION_PATH}/fast-downward.py']
-        + extra_flags + [
-            '--alias', 'lama-first',
-            '--keep-sas-file',
-            '--transform-task-options', preprocessor_settings,
-            '--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
-            '--overall-time-limit', '2400',
-            '--search-time-limit', '500',
-            DOMAIN,
-            PROBLEM])
-    """
-    
-    subprocess.check_call(
-        [f'{SCORPION_PATH}/fast-downward.py']
+
+    eval_opprior = ['--evaluator', f'opp=operator_priorities(priority={priority_type}())'] if priority_type is not None else []
+
+    call = [f'{SCORPION_PATH}/fast-downward.py'] \
         + extra_flags + [
             '--keep-sas-file',
             '--transform-task-options', preprocessor_settings,
@@ -94,10 +76,13 @@ def main():
             '--search-time-limit', args.time_limit,
             '--overall-memory-limit', args.memory_limit,
             DOMAIN,
-            PROBLEM,
-            '--evaluator', f'opp=operator_priorities(priority={priority_type}())',
-            '--search', "eager_greedy([opp])",
-            ])
+            PROBLEM ] + \
+        eval_opprior + \
+        ["--search", args.search]
+    
+    print(f"The planner call is {call}")
+    subprocess.check_call(call)
+
 #priority could be [instant, path, path_norm]
 #./fast-downward.py benchmarks/blocksworld/domain.pddl benchmarks/blocksworld/training/easy/p10.pddl 
 # --evaluator "hprio=opprio()" --search "eager_greedy([hprio])"
