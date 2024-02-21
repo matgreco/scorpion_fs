@@ -2,75 +2,489 @@ begin_operator
 pickup b1
 0
 3
-0 1 0 1
-0 4 0 1
-0 3 2 0
+0 2 0 1
+0 8 0 1
+0 5 5 0
 1
 end_operator
 begin_operator
 pickup b2
 0
 3
-0 1 0 1
+0 2 0 1
+0 9 0 1
+0 6 5 0
+1
+end_operator
+begin_operator
+pickup b3
+0
+3
+0 2 0 1
 0 0 0 1
-0 2 2 0
+0 3 5 0
+1
+end_operator
+begin_operator
+pickup b4
+0
+3
+0 2 0 1
+0 10 0 1
+0 7 5 0
+1
+end_operator
+begin_operator
+pickup b5
+0
+3
+0 2 0 1
+0 1 0 1
+0 4 5 0
 1
 end_operator
 begin_operator
 putdown b1
 0
 3
-0 1 -1 0
-0 4 -1 0
-0 3 0 2
+0 2 -1 0
+0 8 -1 0
+0 5 0 5
 1
 end_operator
 begin_operator
 putdown b2
 0
 3
-0 1 -1 0
+0 2 -1 0
+0 9 -1 0
+0 6 0 5
+1
+end_operator
+begin_operator
+putdown b3
+0
+3
+0 2 -1 0
 0 0 -1 0
-0 2 0 2
+0 3 0 5
+1
+end_operator
+begin_operator
+putdown b4
+0
+3
+0 2 -1 0
+0 10 -1 0
+0 7 0 5
+1
+end_operator
+begin_operator
+putdown b5
+0
+3
+0 2 -1 0
+0 1 -1 0
+0 4 0 5
 1
 end_operator
 begin_operator
 stack b1 b2
 0
 4
-0 1 -1 0
-0 4 -1 0
+0 2 -1 0
+0 8 -1 0
+0 9 0 1
+0 5 0 1
+1
+end_operator
+begin_operator
+stack b1 b3
+0
+4
+0 2 -1 0
+0 8 -1 0
 0 0 0 1
-0 3 0 1
+0 5 0 2
+1
+end_operator
+begin_operator
+stack b1 b4
+0
+4
+0 2 -1 0
+0 8 -1 0
+0 10 0 1
+0 5 0 3
+1
+end_operator
+begin_operator
+stack b1 b5
+0
+4
+0 2 -1 0
+0 8 -1 0
+0 1 0 1
+0 5 0 4
 1
 end_operator
 begin_operator
 stack b2 b1
 0
 4
+0 2 -1 0
+0 8 0 1
+0 9 -1 0
+0 6 0 1
+1
+end_operator
+begin_operator
+stack b2 b3
+0
+4
+0 2 -1 0
+0 9 -1 0
+0 0 0 1
+0 6 0 2
+1
+end_operator
+begin_operator
+stack b2 b4
+0
+4
+0 2 -1 0
+0 9 -1 0
+0 10 0 1
+0 6 0 3
+1
+end_operator
+begin_operator
+stack b2 b5
+0
+4
+0 2 -1 0
+0 9 -1 0
+0 1 0 1
+0 6 0 4
+1
+end_operator
+begin_operator
+stack b3 b1
+0
+4
+0 2 -1 0
+0 8 0 1
+0 0 -1 0
+0 3 0 1
+1
+end_operator
+begin_operator
+stack b3 b2
+0
+4
+0 2 -1 0
+0 9 0 1
+0 0 -1 0
+0 3 0 2
+1
+end_operator
+begin_operator
+stack b3 b4
+0
+4
+0 2 -1 0
+0 0 -1 0
+0 10 0 1
+0 3 0 3
+1
+end_operator
+begin_operator
+stack b3 b5
+0
+4
+0 2 -1 0
+0 0 -1 0
+0 1 0 1
+0 3 0 4
+1
+end_operator
+begin_operator
+stack b4 b1
+0
+4
+0 2 -1 0
+0 8 0 1
+0 10 -1 0
+0 7 0 1
+1
+end_operator
+begin_operator
+stack b4 b2
+0
+4
+0 2 -1 0
+0 9 0 1
+0 10 -1 0
+0 7 0 2
+1
+end_operator
+begin_operator
+stack b4 b3
+0
+4
+0 2 -1 0
+0 0 0 1
+0 10 -1 0
+0 7 0 3
+1
+end_operator
+begin_operator
+stack b4 b5
+0
+4
+0 2 -1 0
+0 10 -1 0
+0 1 0 1
+0 7 0 4
+1
+end_operator
+begin_operator
+stack b5 b1
+0
+4
+0 2 -1 0
+0 8 0 1
 0 1 -1 0
 0 4 0 1
-0 0 -1 0
-0 2 0 1
+1
+end_operator
+begin_operator
+stack b5 b2
+0
+4
+0 2 -1 0
+0 9 0 1
+0 1 -1 0
+0 4 0 2
+1
+end_operator
+begin_operator
+stack b5 b3
+0
+4
+0 2 -1 0
+0 0 0 1
+0 1 -1 0
+0 4 0 3
+1
+end_operator
+begin_operator
+stack b5 b4
+0
+4
+0 2 -1 0
+0 10 0 1
+0 1 -1 0
+0 4 0 4
 1
 end_operator
 begin_operator
 unstack b1 b2
 0
 4
-0 1 0 1
-0 4 0 1
+0 2 0 1
+0 8 0 1
+0 9 -1 0
+0 5 1 0
+1
+end_operator
+begin_operator
+unstack b1 b3
+0
+4
+0 2 0 1
+0 8 0 1
 0 0 -1 0
-0 3 1 0
+0 5 2 0
+1
+end_operator
+begin_operator
+unstack b1 b4
+0
+4
+0 2 0 1
+0 8 0 1
+0 10 -1 0
+0 5 3 0
+1
+end_operator
+begin_operator
+unstack b1 b5
+0
+4
+0 2 0 1
+0 8 0 1
+0 1 -1 0
+0 5 4 0
 1
 end_operator
 begin_operator
 unstack b2 b1
 0
 4
-0 1 0 1
-0 4 -1 0
+0 2 0 1
+0 8 -1 0
+0 9 0 1
+0 6 1 0
+1
+end_operator
+begin_operator
+unstack b2 b3
+0
+4
+0 2 0 1
+0 9 0 1
+0 0 -1 0
+0 6 2 0
+1
+end_operator
+begin_operator
+unstack b2 b4
+0
+4
+0 2 0 1
+0 9 0 1
+0 10 -1 0
+0 6 3 0
+1
+end_operator
+begin_operator
+unstack b2 b5
+0
+4
+0 2 0 1
+0 9 0 1
+0 1 -1 0
+0 6 4 0
+1
+end_operator
+begin_operator
+unstack b3 b1
+0
+4
+0 2 0 1
+0 8 -1 0
 0 0 0 1
-0 2 1 0
+0 3 1 0
+1
+end_operator
+begin_operator
+unstack b3 b2
+0
+4
+0 2 0 1
+0 9 -1 0
+0 0 0 1
+0 3 2 0
+1
+end_operator
+begin_operator
+unstack b3 b4
+0
+4
+0 2 0 1
+0 0 0 1
+0 10 -1 0
+0 3 3 0
+1
+end_operator
+begin_operator
+unstack b3 b5
+0
+4
+0 2 0 1
+0 0 0 1
+0 1 -1 0
+0 3 4 0
+1
+end_operator
+begin_operator
+unstack b4 b1
+0
+4
+0 2 0 1
+0 8 -1 0
+0 10 0 1
+0 7 1 0
+1
+end_operator
+begin_operator
+unstack b4 b2
+0
+4
+0 2 0 1
+0 9 -1 0
+0 10 0 1
+0 7 2 0
+1
+end_operator
+begin_operator
+unstack b4 b3
+0
+4
+0 2 0 1
+0 0 -1 0
+0 10 0 1
+0 7 3 0
+1
+end_operator
+begin_operator
+unstack b4 b5
+0
+4
+0 2 0 1
+0 10 0 1
+0 1 -1 0
+0 7 4 0
+1
+end_operator
+begin_operator
+unstack b5 b1
+0
+4
+0 2 0 1
+0 8 -1 0
+0 1 0 1
+0 4 1 0
+1
+end_operator
+begin_operator
+unstack b5 b2
+0
+4
+0 2 0 1
+0 9 -1 0
+0 1 0 1
+0 4 2 0
+1
+end_operator
+begin_operator
+unstack b5 b3
+0
+4
+0 2 0 1
+0 0 -1 0
+0 1 0 1
+0 4 3 0
+1
+end_operator
+begin_operator
+unstack b5 b4
+0
+4
+0 2 0 1
+0 10 -1 0
+0 1 0 1
+0 4 4 0
 1
 end_operator
