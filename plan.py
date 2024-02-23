@@ -11,8 +11,6 @@ import shutil
 import tarfile
 from datetime import datetime
 
-NONE_FLAG = []
-extra_flags = NONE_FLAG
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,6 +34,9 @@ def main():
 
     # best_model_path = os.join.path(args.dk, "best_model/model.pt")
 
+    NONE_FLAG = []
+    extra_flags = NONE_FLAG
+
     ROOT = os.path.dirname(os.path.abspath(__file__))
     REPO_GNN_LEARNING = f"{ROOT}/gnn-learning"
     SCORPION_PATH = f"{ROOT}"
@@ -45,6 +46,8 @@ def main():
     PROBLEM = args.problem
     PLAN_OUT = args.plan
     priority_type = args.priority
+    if priority_type.lower() == "none":
+        priority_type = None
 
     assert(priority_type in [None, "instant", "path", "path_norm"])
 
@@ -61,6 +64,9 @@ def main():
         model_path = os.path.join(dk_folder, "model.pt")
         # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
         preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
+        extra_flags += ['--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
+                        '--transform-task-options', preprocessor_settings]
+
 
     print("Current Path:", os.getcwd())
     print("Repo GNN Learning", REPO_GNN_LEARNING)
@@ -70,8 +76,6 @@ def main():
     call = [f'{SCORPION_PATH}/fast-downward.py'] \
         + extra_flags + [
             '--keep-sas-file',
-            '--transform-task-options', preprocessor_settings,
-            '--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
             '--overall-time-limit', args.time_limit,
             '--search-time-limit', args.time_limit,
             '--overall-memory-limit', args.memory_limit,
