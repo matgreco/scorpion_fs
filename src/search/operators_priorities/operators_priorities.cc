@@ -1,13 +1,20 @@
 #include <fstream>
 #include <cmath>
 #include "operators_priorities.h"
+#include "../task_utils/successor_generator.h"
 
 
 using namespace std;
 
 namespace OpPriorities {
 
-OpPrioritiesHeuristic::OpPrioritiesHeuristic(const plugins::Options &opts)  : Heuristic(opts), priority_strategy(opts.get<shared_ptr<PrioritiesStrategy>> ("priority") )  {
+OpPrioritiesHeuristic::OpPrioritiesHeuristic(
+    const plugins::Options &opts)  
+    : Heuristic(opts), 
+      priority_strategy(opts.get<shared_ptr<PrioritiesStrategy>> ("priority")),
+      successor_generator(nullptr){
+
+    string strategy_name = priority_strategy->get_name();
     cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ OP PRIORITIES CREATED " << endl;
     std::fstream in("workspace/action_probabilities.txt");
     std::string line;
@@ -26,8 +33,10 @@ OpPrioritiesHeuristic::OpPrioritiesHeuristic(const plugins::Options &opts)  : He
         op_priorities.push_back(oppriority);       
         ++i;
     }
-    
-    cout << "*********************************** OP PRIORITIES TYPE " << priority_strategy->get_name() << endl;
+    cout << "*********************************** OP PRIORITIES TYPE " << strategy_name << endl;
+    successor_generator =
+            utils::make_unique_ptr<successor_generator::SuccessorGenerator>(
+                task_proxy);
 }
 
 void OpPrioritiesHeuristic::get_path_dependent_evaluators(
@@ -53,11 +62,29 @@ void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     path_depth[initial_state] = 1;   
     cache_heuristics_priority[initial_state] = 0.0;
     //parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
+
+
+    //sum_priorities_siblings[initial_state] = priority_strategy->compute_sum_successors(&initial_state);
+    
 }
 
 void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, OperatorID op_id, const State &state) {
     path_depth[state] = path_depth[parent_state]+1;
-    //cout << "-- op prior " << op_priorities[op_id.get_index()] << endl;
+    
+    // only if the priority strategy needs to has the sum of the siblings and if is not already calculated 
+    if (priority_strategy->sum_succ_dependent_evaluator && !sum_priorities_siblings_ready[parent_state]){
+        vector<OperatorID> applicable_ops;
+        successor_generator->generate_applicable_ops(parent_state, applicable_ops);
+
+        sum_priorities_siblings_ready[parent_state] = true;
+        sum_priorities_siblings[parent_state] = 0;
+        //cout << "The state " << parent_state.get_id() << " has the follows operators" << endl; 
+        for (OperatorID op_id_succs : applicable_ops) {
+            //cout << "  - " << op_id_succs << ":" << op_priorities[op_id_succs.get_index()] <<  endl; 
+            sum_priorities_siblings[parent_state] += exp(op_priorities[op_id_succs.get_index()]);
+        }
+        //cout << "The sum of the siblings are: " << sum_priorities_siblings[parent_state] << endl;
+    }  
     double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()]);  //<--- cambiar
     cache_heuristics_priority[state] = value;
 
@@ -67,6 +94,7 @@ void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, O
     // 2) CACHE HEURISTIC PRIORITY AS THE FINAL HEURISTIC FOR THE STATE
     // 3) UPDATE THE PRIORITY OF THE STATE IF THE NEW PRIORITY IS LOWER (AS HEURISTIC VALUE, LOWER IS BETTER)
     // 4) OPTIONS (AS I WRITED IN THE FEATURE METHOD)
+    
     
 }   
 }

@@ -22,6 +22,8 @@ int StrategyInstant::compute_heuristic_from_priority(double heuristic_priority, 
     return (int)((1 - heuristic_priority)*10000);
 }
 
+
+
 class StrategyInstantFeature : public plugins::TypedFeature<PrioritiesStrategy, StrategyInstant> {
 public:
     StrategyInstantFeature() : TypedFeature("instant") {

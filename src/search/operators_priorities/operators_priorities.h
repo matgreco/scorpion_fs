@@ -13,6 +13,11 @@
 
 #include <memory>
 
+namespace successor_generator {
+class SuccessorGenerator;
+}
+
+
 namespace OpPriorities {
 class OpPrioritiesFunction;
 
@@ -22,14 +27,17 @@ class OpPrioritiesHeuristic : public Heuristic {
     PerStateInformation<double> cache_heuristics_priority;    
     //PerStateInformation<const State*> parent; // the parent state
     PerStateInformation<int> path_depth;
+    PerStateInformation<double> sum_priorities_siblings; 
+    PerStateInformation<bool> sum_priorities_siblings_ready; 
     std::shared_ptr<OpPriorities::PrioritiesStrategy> priority_strategy;
     
 protected:
+    std::unique_ptr<successor_generator::SuccessorGenerator> successor_generator;
     virtual int compute_heuristic(const State &ancestor_state) override;
     float path_heuristic(const State &state);
     float path_heuristic_normalized(const State &state);
     float instant_heuristic(const State &state);
-
+    
 public:
     virtual void get_path_dependent_evaluators(std::set<Evaluator *> &evals) override;
     explicit OpPrioritiesHeuristic(const plugins::Options &opts);
