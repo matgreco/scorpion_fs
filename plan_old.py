@@ -11,8 +11,6 @@ import shutil
 import tarfile
 from datetime import datetime
 
-NONE_FLAG = []
-extra_flags = NONE_FLAG
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -36,6 +34,9 @@ def main():
 
     # best_model_path = os.join.path(args.dk, "best_model/model.pt")
 
+    NONE_FLAG = []
+    extra_flags = NONE_FLAG
+
     ROOT = os.path.dirname(os.path.abspath(__file__))
     REPO_GNN_LEARNING = f"{ROOT}/gnn-learning"
     SCORPION_PATH = f"{ROOT}"
@@ -45,6 +46,8 @@ def main():
     PROBLEM = args.problem
     PLAN_OUT = args.plan
     priority_type = args.priority
+    if priority_type.lower() == "none":
+        priority_type = None
 
     priority_type = None if priority_type=="None" else priority_type
     assert(priority_type in [None, "instant", "path", "path_norm", "policy_instant"])
@@ -61,11 +64,19 @@ def main():
  
         model_path = os.path.join(dk_folder, "model.pt")
         # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
+<<<<<<< HEAD
     preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
+=======
+        preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
+        extra_flags += ['--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
+                        '--transform-task-options', preprocessor_settings]
+
+>>>>>>> 4cd2961224a35bb25779743f588de8a0b670813a
 
     print("Current Path:", os.getcwd())
     print("Repo GNN Learning", REPO_GNN_LEARNING)
 
+<<<<<<< HEAD
     if priority_type is not None:
         eval_opprior = ['--evaluator', f'opp=operator_priorities(priority={priority_type}())'] 
         print("EVAL PRIOR",eval_opprior)
@@ -97,6 +108,21 @@ def main():
             eval_opprior + \
             ["--search", args.search]
 
+=======
+    eval_opprior = ['--evaluator', f'opp=operator_priorities(priority={priority_type}())'] if priority_type is not None else []
+
+    call = [f'{SCORPION_PATH}/fast-downward.py'] \
+        + extra_flags + [
+            '--keep-sas-file',
+            '--overall-time-limit', args.time_limit,
+            '--search-time-limit', args.time_limit,
+            '--overall-memory-limit', args.memory_limit,
+            DOMAIN,
+            PROBLEM ] + \
+        eval_opprior + \
+        ["--search", args.search]
+    
+>>>>>>> 4cd2961224a35bb25779743f588de8a0b670813a
     print(f"The planner call is {call}")
     subprocess.check_call(call)
 

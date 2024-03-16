@@ -4,7 +4,7 @@ import os
 def run_h2_preprocessor_on_file(path_to_file: str, time_limit,  **kwargs):
     print("OS OS OS OS", os.getcwd())
 
-    h2_path = ['../../scorpion/builds/release/bin/preprocess-h2']
+    h2_path = ['../../builds/release/bin/preprocess-h2']
     #h2_path = ['builds/release/bin/preprocess-h2']
     
     if kwargs is None:
