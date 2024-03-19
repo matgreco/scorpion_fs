@@ -9,7 +9,7 @@ StrategyInstant::StrategyInstant(const plugins::Options &opts)
     : PrioritiesStrategy(opts) { 
 }
 
-double StrategyInstant::compute_value([[maybe_unused]] double parent_heuristic_priority, double op_priority) {
+double StrategyInstant::compute_value([[maybe_unused]] double parent_heuristic_priority, double op_priority, [[maybe_unused]] double exp_sum_siblings ) {
     double value = op_priority;
     return value;
 }

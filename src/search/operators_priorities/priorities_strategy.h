@@ -15,7 +15,6 @@ public:
     PrioritiesStrategy([[maybe_unused]] const plugins::Options &opts) {} 
     virtual ~PrioritiesStrategy() = default;
 
-    virtual double compute_value(double parent_heuristic_priority, double op_priority) = 0 ;
     virtual double compute_value(double parent_heuristic_priority, double op_priority, double exp_sum_siblings) = 0 ;
 
     virtual std::string get_name() const = 0;

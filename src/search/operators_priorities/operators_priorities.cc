@@ -49,7 +49,7 @@ OpPrioritiesHeuristic::~OpPrioritiesHeuristic() {
 
 int OpPrioritiesHeuristic::compute_heuristic(const State &state) {
     int value = priority_strategy->compute_heuristic_from_priority(cache_heuristics_priority[state], path_depth[state]);
-    //cout << "heuristic = " << value << endl;
+    cout << " * state " << state.get_id() << " heuristic = " << value << " - cache heuristic priority " << cache_heuristics_priority[state] << endl;
     return value;
 }
 
@@ -63,29 +63,35 @@ void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     cache_heuristics_priority[initial_state] = 0.0;
     //parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
 
+    sum_priorities_siblings[initial_state] = 0;
+    // only if the priority strategy needs to has the sum of the siblings and if is not already calculated 
+    if (priority_strategy->sum_succ_dependent_evaluator && !sum_priorities_siblings_ready[initial_state]){
+        vector<OperatorID> applicable_ops;
+        successor_generator->generate_applicable_ops(initial_state, applicable_ops);
 
-    //sum_priorities_siblings[initial_state] = priority_strategy->compute_sum_successors(&initial_state);
+        sum_priorities_siblings_ready[initial_state] = true;
+        for (OperatorID op_id_succs : applicable_ops) {
+            sum_priorities_siblings[initial_state] += exp(op_priorities[op_id_succs.get_index()]);
+        }
+    }
     
 }
 
 void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, OperatorID op_id, const State &state) {
     path_depth[state] = path_depth[parent_state]+1;
-    
     // only if the priority strategy needs to has the sum of the siblings and if is not already calculated 
     if (priority_strategy->sum_succ_dependent_evaluator && !sum_priorities_siblings_ready[parent_state]){
         vector<OperatorID> applicable_ops;
         successor_generator->generate_applicable_ops(parent_state, applicable_ops);
-
-        sum_priorities_siblings_ready[parent_state] = true;
         sum_priorities_siblings[parent_state] = 0;
-        //cout << "The state " << parent_state.get_id() << " has the follows operators" << endl; 
+        sum_priorities_siblings_ready[parent_state] = true;
         for (OperatorID op_id_succs : applicable_ops) {
-            //cout << "  - " << op_id_succs << ":" << op_priorities[op_id_succs.get_index()] <<  endl; 
             sum_priorities_siblings[parent_state] += exp(op_priorities[op_id_succs.get_index()]);
         }
-        //cout << "The sum of the siblings are: " << sum_priorities_siblings[parent_state] << endl;
-    }  
-    double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()]);  //<--- cambiar
+    } 
+    
+    cout << "  - calculando para el op con priority " << op_priorities[op_id.get_index()] << " y sum " << sum_priorities_siblings[parent_state] << endl;
+    double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()], sum_priorities_siblings[parent_state]);  //<--- cambiar
     cache_heuristics_priority[state] = value;
 
     if (cache_heuristics_priority[state] < value) 

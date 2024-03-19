@@ -9,7 +9,7 @@ StrategyPathNormalized::StrategyPathNormalized(const plugins::Options &opts)
     : PrioritiesStrategy(opts) {
 }
 
-double StrategyPathNormalized::compute_value(double parent_heuristic_priority, double op_priority) {
+double StrategyPathNormalized::compute_value(double parent_heuristic_priority, double op_priority, [[maybe_unused]] double exp_sum_siblings) {
     double value = (parent_heuristic_priority + std::log10(op_priority));
     //cout << parent_heuristic_priority << " - " << op_priority << "(" << std::log10(op_priority) << ") = " << value << endl;
     return value;
