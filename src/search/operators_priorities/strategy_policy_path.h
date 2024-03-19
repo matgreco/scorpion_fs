@@ -7,11 +7,11 @@
 
 namespace OpPriorities {
 
-class StrategyPolicyInstant : public PrioritiesStrategy {
+class StrategyPolicyPath : public PrioritiesStrategy {
 
     public:
         bool sum_succ_dependent_evaluator = true;
-        StrategyPolicyInstant(const plugins::Options &opts); 
+        StrategyPolicyPath(const plugins::Options &opts); 
         double compute_value(double parent_heuristic_priority, double op_priority, double exp_sum_siblings) override; // this require the sum of the siblings
         std::string get_name() const override;
 

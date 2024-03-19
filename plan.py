@@ -49,10 +49,9 @@ def main():
     if priority_type.lower() == "none":
         priority_type = None
 
-    priority_type = None if priority_type=="None" else priority_type
-    assert(priority_type in [None, "instant", "path", "path_norm", "policy_instant"])
+    assert(priority_type in [None, "instant", "path", "path_norm", "policy_instant", "policy_path", "policy_path_norm"])
 
-    if priority_type is not None: 
+    if priority_type is not None: #random_heuristic(max_value=100)
         dk_folder = f"extracted"
 
         # uncompress domain knowledge file
@@ -64,51 +63,14 @@ def main():
  
         model_path = os.path.join(dk_folder, "model.pt")
         # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
-<<<<<<< HEAD
-    preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
-=======
         preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
         extra_flags += ['--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
                         '--transform-task-options', preprocessor_settings]
 
->>>>>>> 4cd2961224a35bb25779743f588de8a0b670813a
 
     print("Current Path:", os.getcwd())
     print("Repo GNN Learning", REPO_GNN_LEARNING)
 
-<<<<<<< HEAD
-    if priority_type is not None:
-        eval_opprior = ['--evaluator', f'opp=operator_priorities(priority={priority_type}())'] 
-        print("EVAL PRIOR",eval_opprior)
-        call = [f'{SCORPION_PATH}/fast-downward.py'] \
-            + extra_flags + [
-                '--keep-sas-file',
-                '--transform-task-options', preprocessor_settings,
-                '--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
-                '--overall-time-limit', args.time_limit,
-                '--search-time-limit', args.time_limit,
-                '--overall-memory-limit', args.memory_limit,
-                DOMAIN,
-                PROBLEM ] + \
-            eval_opprior + \
-            ["--search", args.search]
-    else:
-        eval_opprior =[] 
-        print("EVAL PRIOR",eval_opprior)
-        call = [f'{SCORPION_PATH}/fast-downward.py'] \
-            + extra_flags + [
-                '--keep-sas-file',
-                #'--transform-task-options', preprocessor_settings,
-                #'--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
-                '--overall-time-limit', args.time_limit,
-                '--search-time-limit', args.time_limit,
-                '--overall-memory-limit', args.memory_limit,
-                DOMAIN,
-                PROBLEM ] + \
-            eval_opprior + \
-            ["--search", args.search]
-
-=======
     eval_opprior = ['--evaluator', f'opp=operator_priorities(priority={priority_type}())'] if priority_type is not None else []
 
     call = [f'{SCORPION_PATH}/fast-downward.py'] \
@@ -120,9 +82,8 @@ def main():
             DOMAIN,
             PROBLEM ] + \
         eval_opprior + \
-        ["--search", args.search]
+        ["--evaluator", "ff=ff()", "--search", args.search]
     
->>>>>>> 4cd2961224a35bb25779743f588de8a0b670813a
     print(f"The planner call is {call}")
     subprocess.check_call(call)
 

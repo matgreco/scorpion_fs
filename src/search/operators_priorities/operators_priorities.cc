@@ -49,7 +49,7 @@ OpPrioritiesHeuristic::~OpPrioritiesHeuristic() {
 
 int OpPrioritiesHeuristic::compute_heuristic(const State &state) {
     int value = priority_strategy->compute_heuristic_from_priority(cache_heuristics_priority[state], path_depth[state]);
-    cout << " * state " << state.get_id() << " heuristic = " << value << " - cache heuristic priority " << cache_heuristics_priority[state] << endl;
+    //cout << " * state " << state.get_id() << " heuristic = " << value << " - cache heuristic priority " << cache_heuristics_priority[state] << endl;
     return value;
 }
 
@@ -90,7 +90,7 @@ void OpPrioritiesHeuristic::notify_state_transition(const State &parent_state, O
         }
     } 
     
-    cout << "  - calculando para el op con priority " << op_priorities[op_id.get_index()] << " y sum " << sum_priorities_siblings[parent_state] << endl;
+    //cout << "  - calculando para el op con priority " << op_priorities[op_id.get_index()] << " y sum " << sum_priorities_siblings[parent_state] << endl;
     double value = priority_strategy->compute_value(cache_heuristics_priority[parent_state], op_priorities[op_id.get_index()], sum_priorities_siblings[parent_state]);  //<--- cambiar
     cache_heuristics_priority[state] = value;
 

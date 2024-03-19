@@ -1,490 +1,644 @@
 begin_operator
-pickup b1
+change_color robot1 black white
 0
-3
-0 2 0 1
-0 8 0 1
-0 5 5 0
 1
-end_operator
-begin_operator
-pickup b2
-0
-3
-0 2 0 1
-0 9 0 1
-0 6 5 0
-1
-end_operator
-begin_operator
-pickup b3
-0
-3
-0 2 0 1
 0 0 0 1
-0 3 5 0
 1
 end_operator
 begin_operator
-pickup b4
+change_color robot1 white black
+0
+1
+0 0 1 0
+1
+end_operator
+begin_operator
+move_down robot1 tile_1_1 tile_0_1
 0
 3
-0 2 0 1
-0 10 0 1
-0 7 5 0
-1
-end_operator
-begin_operator
-pickup b5
-0
-3
-0 2 0 1
-0 1 0 1
-0 4 5 0
-1
-end_operator
-begin_operator
-putdown b1
-0
-3
-0 2 -1 0
+0 1 0 3
 0 8 -1 0
-0 5 0 5
-1
-end_operator
-begin_operator
-putdown b2
-0
-3
-0 2 -1 0
-0 9 -1 0
-0 6 0 5
-1
-end_operator
-begin_operator
-putdown b3
-0
-3
-0 2 -1 0
-0 0 -1 0
-0 3 0 5
-1
-end_operator
-begin_operator
-putdown b4
-0
-3
-0 2 -1 0
-0 10 -1 0
-0 7 0 5
-1
-end_operator
-begin_operator
-putdown b5
-0
-3
-0 2 -1 0
-0 1 -1 0
-0 4 0 5
-1
-end_operator
-begin_operator
-stack b1 b2
-0
-4
-0 2 -1 0
-0 8 -1 0
-0 9 0 1
-0 5 0 1
-1
-end_operator
-begin_operator
-stack b1 b3
-0
-4
-0 2 -1 0
-0 8 -1 0
-0 0 0 1
-0 5 0 2
-1
-end_operator
-begin_operator
-stack b1 b4
-0
-4
-0 2 -1 0
-0 8 -1 0
-0 10 0 1
-0 5 0 3
-1
-end_operator
-begin_operator
-stack b1 b5
-0
-4
-0 2 -1 0
-0 8 -1 0
-0 1 0 1
-0 5 0 4
-1
-end_operator
-begin_operator
-stack b2 b1
-0
-4
-0 2 -1 0
-0 8 0 1
-0 9 -1 0
-0 6 0 1
-1
-end_operator
-begin_operator
-stack b2 b3
-0
-4
-0 2 -1 0
-0 9 -1 0
-0 0 0 1
-0 6 0 2
-1
-end_operator
-begin_operator
-stack b2 b4
-0
-4
-0 2 -1 0
-0 9 -1 0
-0 10 0 1
-0 6 0 3
-1
-end_operator
-begin_operator
-stack b2 b5
-0
-4
-0 2 -1 0
-0 9 -1 0
-0 1 0 1
-0 6 0 4
-1
-end_operator
-begin_operator
-stack b3 b1
-0
-4
-0 2 -1 0
-0 8 0 1
-0 0 -1 0
-0 3 0 1
-1
-end_operator
-begin_operator
-stack b3 b2
-0
-4
-0 2 -1 0
-0 9 0 1
-0 0 -1 0
-0 3 0 2
-1
-end_operator
-begin_operator
-stack b3 b4
-0
-4
-0 2 -1 0
-0 0 -1 0
-0 10 0 1
-0 3 0 3
-1
-end_operator
-begin_operator
-stack b3 b5
-0
-4
-0 2 -1 0
-0 0 -1 0
-0 1 0 1
-0 3 0 4
-1
-end_operator
-begin_operator
-stack b4 b1
-0
-4
-0 2 -1 0
-0 8 0 1
-0 10 -1 0
-0 7 0 1
-1
-end_operator
-begin_operator
-stack b4 b2
-0
-4
-0 2 -1 0
-0 9 0 1
-0 10 -1 0
-0 7 0 2
-1
-end_operator
-begin_operator
-stack b4 b3
-0
-4
-0 2 -1 0
-0 0 0 1
-0 10 -1 0
-0 7 0 3
-1
-end_operator
-begin_operator
-stack b4 b5
-0
-4
-0 2 -1 0
-0 10 -1 0
-0 1 0 1
-0 7 0 4
-1
-end_operator
-begin_operator
-stack b5 b1
-0
-4
-0 2 -1 0
-0 8 0 1
-0 1 -1 0
-0 4 0 1
-1
-end_operator
-begin_operator
-stack b5 b2
-0
-4
-0 2 -1 0
-0 9 0 1
-0 1 -1 0
-0 4 0 2
-1
-end_operator
-begin_operator
-stack b5 b3
-0
-4
-0 2 -1 0
-0 0 0 1
-0 1 -1 0
-0 4 0 3
-1
-end_operator
-begin_operator
-stack b5 b4
-0
-4
-0 2 -1 0
-0 10 0 1
-0 1 -1 0
-0 4 0 4
-1
-end_operator
-begin_operator
-unstack b1 b2
-0
-4
-0 2 0 1
-0 8 0 1
-0 9 -1 0
-0 5 1 0
-1
-end_operator
-begin_operator
-unstack b1 b3
-0
-4
-0 2 0 1
-0 8 0 1
-0 0 -1 0
-0 5 2 0
-1
-end_operator
-begin_operator
-unstack b1 b4
-0
-4
-0 2 0 1
-0 8 0 1
-0 10 -1 0
-0 5 3 0
-1
-end_operator
-begin_operator
-unstack b1 b5
-0
-4
-0 2 0 1
-0 8 0 1
-0 1 -1 0
-0 5 4 0
-1
-end_operator
-begin_operator
-unstack b2 b1
-0
-4
-0 2 0 1
-0 8 -1 0
-0 9 0 1
-0 6 1 0
-1
-end_operator
-begin_operator
-unstack b2 b3
-0
-4
-0 2 0 1
-0 9 0 1
-0 0 -1 0
-0 6 2 0
-1
-end_operator
-begin_operator
-unstack b2 b4
-0
-4
-0 2 0 1
-0 9 0 1
-0 10 -1 0
-0 6 3 0
-1
-end_operator
-begin_operator
-unstack b2 b5
-0
-4
-0 2 0 1
-0 9 0 1
-0 1 -1 0
-0 6 4 0
-1
-end_operator
-begin_operator
-unstack b3 b1
-0
-4
-0 2 0 1
-0 8 -1 0
-0 0 0 1
-0 3 1 0
-1
-end_operator
-begin_operator
-unstack b3 b2
-0
-4
-0 2 0 1
-0 9 -1 0
-0 0 0 1
-0 3 2 0
-1
-end_operator
-begin_operator
-unstack b3 b4
-0
-4
-0 2 0 1
-0 0 0 1
-0 10 -1 0
-0 3 3 0
-1
-end_operator
-begin_operator
-unstack b3 b5
-0
-4
-0 2 0 1
-0 0 0 1
-0 1 -1 0
-0 3 4 0
-1
-end_operator
-begin_operator
-unstack b4 b1
-0
-4
-0 2 0 1
-0 8 -1 0
-0 10 0 1
-0 7 1 0
-1
-end_operator
-begin_operator
-unstack b4 b2
-0
-4
-0 2 0 1
-0 9 -1 0
-0 10 0 1
-0 7 2 0
-1
-end_operator
-begin_operator
-unstack b4 b3
-0
-4
-0 2 0 1
-0 0 -1 0
-0 10 0 1
-0 7 3 0
-1
-end_operator
-begin_operator
-unstack b4 b5
-0
-4
-0 2 0 1
-0 10 0 1
-0 1 -1 0
-0 7 4 0
-1
-end_operator
-begin_operator
-unstack b5 b1
-0
-4
-0 2 0 1
-0 8 -1 0
-0 1 0 1
-0 4 1 0
-1
-end_operator
-begin_operator
-unstack b5 b2
-0
-4
-0 2 0 1
-0 9 -1 0
-0 1 0 1
-0 4 2 0
-1
-end_operator
-begin_operator
-unstack b5 b3
-0
-4
-0 2 0 1
-0 0 -1 0
-0 1 0 1
 0 4 3 0
 1
 end_operator
 begin_operator
-unstack b5 b4
+move_down robot1 tile_1_2 tile_0_2
 0
-4
-0 2 0 1
+3
+0 3 0 3
+0 12 -1 0
+0 4 4 1
+1
+end_operator
+begin_operator
+move_down robot1 tile_1_3 tile_0_3
+0
+3
+0 2 0 3
 0 10 -1 0
+0 4 5 2
+1
+end_operator
+begin_operator
+move_down robot1 tile_2_1 tile_1_1
+0
+3
+0 8 0 3
+0 9 -1 0
+0 4 6 3
+1
+end_operator
+begin_operator
+move_down robot1 tile_2_2 tile_1_2
+0
+3
+0 12 0 3
+0 13 -1 0
+0 4 7 4
+1
+end_operator
+begin_operator
+move_down robot1 tile_2_3 tile_1_3
+0
+3
+0 10 0 3
+0 11 -1 0
+0 4 8 5
+1
+end_operator
+begin_operator
+move_down robot1 tile_3_1 tile_2_1
+0
+3
+0 9 0 3
+0 5 -1 0
+0 4 9 6
+1
+end_operator
+begin_operator
+move_down robot1 tile_3_2 tile_2_2
+0
+3
+0 13 0 3
+0 7 -1 0
+0 4 10 7
+1
+end_operator
+begin_operator
+move_down robot1 tile_3_3 tile_2_3
+0
+3
+0 11 0 3
+0 6 -1 0
+0 4 11 8
+1
+end_operator
+begin_operator
+move_left robot1 tile_0_2 tile_0_1
+0
+3
+0 1 0 3
+0 3 -1 0
+0 4 1 0
+1
+end_operator
+begin_operator
+move_left robot1 tile_0_3 tile_0_2
+0
+3
+0 3 0 3
+0 2 -1 0
+0 4 2 1
+1
+end_operator
+begin_operator
+move_left robot1 tile_1_2 tile_1_1
+0
+3
+0 8 0 3
+0 12 -1 0
+0 4 4 3
+1
+end_operator
+begin_operator
+move_left robot1 tile_1_3 tile_1_2
+0
+3
+0 12 0 3
+0 10 -1 0
+0 4 5 4
+1
+end_operator
+begin_operator
+move_left robot1 tile_2_2 tile_2_1
+0
+3
+0 9 0 3
+0 13 -1 0
+0 4 7 6
+1
+end_operator
+begin_operator
+move_left robot1 tile_2_3 tile_2_2
+0
+3
+0 13 0 3
+0 11 -1 0
+0 4 8 7
+1
+end_operator
+begin_operator
+move_left robot1 tile_3_2 tile_3_1
+0
+3
+0 5 0 3
+0 7 -1 0
+0 4 10 9
+1
+end_operator
+begin_operator
+move_left robot1 tile_3_3 tile_3_2
+0
+3
+0 7 0 3
+0 6 -1 0
+0 4 11 10
+1
+end_operator
+begin_operator
+move_right robot1 tile_0_1 tile_0_2
+0
+3
+0 1 -1 0
+0 3 0 3
+0 4 0 1
+1
+end_operator
+begin_operator
+move_right robot1 tile_0_2 tile_0_3
+0
+3
+0 3 -1 0
+0 2 0 3
+0 4 1 2
+1
+end_operator
+begin_operator
+move_right robot1 tile_1_1 tile_1_2
+0
+3
+0 8 -1 0
+0 12 0 3
+0 4 3 4
+1
+end_operator
+begin_operator
+move_right robot1 tile_1_2 tile_1_3
+0
+3
+0 12 -1 0
+0 10 0 3
+0 4 4 5
+1
+end_operator
+begin_operator
+move_right robot1 tile_2_1 tile_2_2
+0
+3
+0 9 -1 0
+0 13 0 3
+0 4 6 7
+1
+end_operator
+begin_operator
+move_right robot1 tile_2_2 tile_2_3
+0
+3
+0 13 -1 0
+0 11 0 3
+0 4 7 8
+1
+end_operator
+begin_operator
+move_right robot1 tile_3_1 tile_3_2
+0
+3
+0 5 -1 0
+0 7 0 3
+0 4 9 10
+1
+end_operator
+begin_operator
+move_right robot1 tile_3_2 tile_3_3
+0
+3
+0 7 -1 0
+0 6 0 3
+0 4 10 11
+1
+end_operator
+begin_operator
+move_up robot1 tile_0_1 tile_1_1
+0
+3
+0 1 -1 0
+0 8 0 3
+0 4 0 3
+1
+end_operator
+begin_operator
+move_up robot1 tile_0_2 tile_1_2
+0
+3
+0 3 -1 0
+0 12 0 3
+0 4 1 4
+1
+end_operator
+begin_operator
+move_up robot1 tile_0_3 tile_1_3
+0
+3
+0 2 -1 0
+0 10 0 3
+0 4 2 5
+1
+end_operator
+begin_operator
+move_up robot1 tile_1_1 tile_2_1
+0
+3
+0 8 -1 0
+0 9 0 3
+0 4 3 6
+1
+end_operator
+begin_operator
+move_up robot1 tile_1_2 tile_2_2
+0
+3
+0 12 -1 0
+0 13 0 3
+0 4 4 7
+1
+end_operator
+begin_operator
+move_up robot1 tile_1_3 tile_2_3
+0
+3
+0 10 -1 0
+0 11 0 3
+0 4 5 8
+1
+end_operator
+begin_operator
+move_up robot1 tile_2_1 tile_3_1
+0
+3
+0 9 -1 0
+0 5 0 3
+0 4 6 9
+1
+end_operator
+begin_operator
+move_up robot1 tile_2_2 tile_3_2
+0
+3
+0 13 -1 0
+0 7 0 3
+0 4 7 10
+1
+end_operator
+begin_operator
+move_up robot1 tile_2_3 tile_3_3
+0
+3
+0 11 -1 0
+0 6 0 3
+0 4 8 11
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_1 tile_1_1 black
+2
+4 3
+0 0
+1
 0 1 0 1
-0 4 4 0
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_1 tile_1_1 white
+2
+4 3
+0 1
+1
+0 1 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_2 tile_1_2 black
+2
+4 4
+0 0
+1
+0 3 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_2 tile_1_2 white
+2
+4 4
+0 1
+1
+0 3 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_3 tile_1_3 black
+2
+4 5
+0 0
+1
+0 2 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_0_3 tile_1_3 white
+2
+4 5
+0 1
+1
+0 2 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_1 tile_2_1 black
+2
+4 6
+0 0
+1
+0 8 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_1 tile_2_1 white
+2
+4 6
+0 1
+1
+0 8 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_2 tile_2_2 black
+2
+4 7
+0 0
+1
+0 12 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_2 tile_2_2 white
+2
+4 7
+0 1
+1
+0 12 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_3 tile_2_3 black
+2
+4 8
+0 0
+1
+0 10 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_1_3 tile_2_3 white
+2
+4 8
+0 1
+1
+0 10 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_1 tile_3_1 black
+2
+4 9
+0 0
+1
+0 9 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_1 tile_3_1 white
+2
+4 9
+0 1
+1
+0 9 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_2 tile_3_2 black
+2
+4 10
+0 0
+1
+0 13 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_2 tile_3_2 white
+2
+4 10
+0 1
+1
+0 13 0 2
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_3 tile_3_3 black
+2
+4 11
+0 0
+1
+0 11 0 1
+1
+end_operator
+begin_operator
+paint_down robot1 tile_2_3 tile_3_3 white
+2
+4 11
+0 1
+1
+0 11 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_1 tile_0_1 black
+2
+4 0
+0 0
+1
+0 8 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_1 tile_0_1 white
+2
+4 0
+0 1
+1
+0 8 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_2 tile_0_2 black
+2
+4 1
+0 0
+1
+0 12 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_2 tile_0_2 white
+2
+4 1
+0 1
+1
+0 12 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_3 tile_0_3 black
+2
+4 2
+0 0
+1
+0 10 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_1_3 tile_0_3 white
+2
+4 2
+0 1
+1
+0 10 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_1 tile_1_1 black
+2
+4 3
+0 0
+1
+0 9 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_1 tile_1_1 white
+2
+4 3
+0 1
+1
+0 9 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_2 tile_1_2 black
+2
+4 4
+0 0
+1
+0 13 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_2 tile_1_2 white
+2
+4 4
+0 1
+1
+0 13 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_3 tile_1_3 black
+2
+4 5
+0 0
+1
+0 11 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_2_3 tile_1_3 white
+2
+4 5
+0 1
+1
+0 11 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_1 tile_2_1 black
+2
+4 6
+0 0
+1
+0 5 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_1 tile_2_1 white
+2
+4 6
+0 1
+1
+0 5 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_2 tile_2_2 black
+2
+4 7
+0 0
+1
+0 7 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_2 tile_2_2 white
+2
+4 7
+0 1
+1
+0 7 0 2
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_3 tile_2_3 black
+2
+4 8
+0 0
+1
+0 6 0 1
+1
+end_operator
+begin_operator
+paint_up robot1 tile_3_3 tile_2_3 white
+2
+4 8
+0 1
+1
+0 6 0 2
 1
 end_operator
