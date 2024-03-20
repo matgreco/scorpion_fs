@@ -64,7 +64,7 @@ def main():
         model_path = os.path.join(dk_folder, "model.pt")
         # preprocessor_settings = os.path.join(dk_folder, "DK", "preprocessor_settings.txt")
         preprocessor_settings = "gnn-retries,2,gnn-threshold,0.0,model-path,extracted/DK/model.pt" # with threshold = 0.0 keep all operators in the SAS file
-        extra_flags += ['--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor.command',
+        extra_flags += ['--transform-task', f'{REPO_GNN_LEARNING}/src/preprocessor_oppriority.command',
                         '--transform-task-options', preprocessor_settings]
 
 
