@@ -1072,6 +1072,7 @@ create_fast_downward_library(
         operators_priorities/priorities_strategy
         operators_priorities/strategy_instant
         operators_priorities/strategy_path
+        operators_priorities/strategy_path_min
         operators_priorities/strategy_path_normalized
         operators_priorities/strategy_policy_instant
         operators_priorities/strategy_policy_path

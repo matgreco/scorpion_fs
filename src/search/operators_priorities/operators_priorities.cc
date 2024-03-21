@@ -59,8 +59,14 @@ void OpPrioritiesHeuristic::notify_initial_state(const State &initial_state) {
     assert( op_priorities.size() != initial_state.get_task().get_operators().size());
 
     //priority[initial_state] = 1.0;
-    path_depth[initial_state] = 1;   
-    cache_heuristics_priority[initial_state] = 0.0;
+    path_depth[initial_state] = 1;  
+    /**
+     * Due to the strategy path min use the min between the priorities, the initial state must be start with a probability equal to 1
+     * **/ 
+    if(priority_strategy->get_name() != "Strategy path min" )
+        cache_heuristics_priority[initial_state] = 0.0;
+    else 
+        cache_heuristics_priority[initial_state] = 1.0;
     //parent[initial_state] = &initial_state; // this is just for the normalized heuristic because need to accesss to the parent depth
 
     sum_priorities_siblings[initial_state] = 0;

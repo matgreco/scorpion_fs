@@ -49,7 +49,7 @@ def main():
     if priority_type.lower() == "none":
         priority_type = None
 
-    assert(priority_type in [None, "instant", "path", "path_norm", "policy_instant", "policy_path", "policy_path_norm"])
+    assert(priority_type in [None, "instant", "path", "path_norm", "path_min", "policy_instant", "policy_path", "policy_path_norm"])
 
     if priority_type is not None: #random_heuristic(max_value=100)
         dk_folder = f"extracted"
