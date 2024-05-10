@@ -46,7 +46,7 @@ def main():
     PROBLEM = args.problem
     PLAN_OUT = args.plan
     priority_type = args.priority
-    if priority_type.lower() == "none":
+    if str(priority_type).lower() == "none":
         priority_type = None
 
     assert(priority_type in [None, "instant", "path", "path_norm", "path_min", "policy_instant", "policy_path", "policy_path_norm"])

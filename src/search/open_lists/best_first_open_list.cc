@@ -32,6 +32,7 @@ public:
     virtual ~BestFirstOpenList() override = default;
 
     virtual Entry remove_min() override;
+    virtual Entry get_min() override;
     virtual bool empty() const override;
     virtual void clear() override;
     virtual void get_path_dependent_evaluators(set<Evaluator *> &evals) override;
@@ -81,6 +82,18 @@ Entry BestFirstOpenList<Entry>::remove_min() {
 }
 
 template<class Entry>
+Entry BestFirstOpenList<Entry>::get_min() {
+    assert(size > 0);
+    auto it = buckets.begin();
+    assert(it != buckets.end());
+    Bucket &bucket = it->second;
+    assert(!bucket.empty());
+    Entry result = bucket.front();
+    return result;
+}
+
+
+template<class Entry>
 bool BestFirstOpenList<Entry>::empty() const {
     return size == 0;
 }
@@ -116,6 +129,7 @@ BestFirstOpenListFactory::BestFirstOpenListFactory(
 
 unique_ptr<StateOpenList>
 BestFirstOpenListFactory::create_state_open_list() {
+    cout << "OPEN LIST CREATED" << endl;
     return utils::make_unique_ptr<BestFirstOpenList<StateOpenListEntry>>(options);
 }
 

@@ -451,6 +451,19 @@ create_fast_downward_library(
 )
 
 create_fast_downward_library(
+    NAME focal_search
+    HELP "Focal search"
+    SOURCES
+        search_algorithms/focal_search
+    DEPENDS
+        null_pruning_method
+        ordered_set
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
+
+create_fast_downward_library(
     NAME plugin_iw
     HELP "Iterative width search"
     SOURCES
@@ -519,6 +532,16 @@ create_fast_downward_library(
         search_algorithms/plugin_eager
     DEPENDS
         eager_search
+        search_common
+)
+
+create_fast_downward_library(
+    NAME plugin_focal
+    HELP "Focal search"
+    SOURCES
+        search_algorithms/plugin_focal_search
+    DEPENDS
+        focal_search
         search_common
 )
 

@@ -2,131 +2,96 @@ begin_variable
 var0
 -1
 2
-Atom robot-has(robot1, black)
-Atom robot-has(robot1, white)
+Atom clear(b3)
+NegatedAtom clear(b3)
 end_variable
 begin_variable
 var1
 -1
-4
-Atom clear(tile_0_1)
-Atom painted(tile_0_1, black)
-Atom painted(tile_0_1, white)
-<none of those>
+2
+Atom clear(b5)
+NegatedAtom clear(b5)
 end_variable
 begin_variable
 var2
 -1
-4
-Atom clear(tile_0_3)
-Atom painted(tile_0_3, black)
-Atom painted(tile_0_3, white)
-<none of those>
+2
+Atom arm-empty()
+NegatedAtom arm-empty()
 end_variable
 begin_variable
 var3
 -1
-4
-Atom clear(tile_0_2)
-Atom painted(tile_0_2, black)
-Atom painted(tile_0_2, white)
-<none of those>
+6
+Atom holding(b3)
+Atom on(b3, b1)
+Atom on(b3, b2)
+Atom on(b3, b4)
+Atom on(b3, b5)
+Atom on-table(b3)
 end_variable
 begin_variable
 var4
 -1
-12
-Atom robot-at(robot1, tile_0_1)
-Atom robot-at(robot1, tile_0_2)
-Atom robot-at(robot1, tile_0_3)
-Atom robot-at(robot1, tile_1_1)
-Atom robot-at(robot1, tile_1_2)
-Atom robot-at(robot1, tile_1_3)
-Atom robot-at(robot1, tile_2_1)
-Atom robot-at(robot1, tile_2_2)
-Atom robot-at(robot1, tile_2_3)
-Atom robot-at(robot1, tile_3_1)
-Atom robot-at(robot1, tile_3_2)
-Atom robot-at(robot1, tile_3_3)
+6
+Atom holding(b5)
+Atom on(b5, b1)
+Atom on(b5, b2)
+Atom on(b5, b3)
+Atom on(b5, b4)
+Atom on-table(b5)
 end_variable
 begin_variable
 var5
 -1
-4
-Atom clear(tile_3_1)
-Atom painted(tile_3_1, black)
-Atom painted(tile_3_1, white)
-<none of those>
+6
+Atom holding(b1)
+Atom on(b1, b2)
+Atom on(b1, b3)
+Atom on(b1, b4)
+Atom on(b1, b5)
+Atom on-table(b1)
 end_variable
 begin_variable
 var6
 -1
-4
-Atom clear(tile_3_3)
-Atom painted(tile_3_3, black)
-Atom painted(tile_3_3, white)
-<none of those>
+6
+Atom holding(b2)
+Atom on(b2, b1)
+Atom on(b2, b3)
+Atom on(b2, b4)
+Atom on(b2, b5)
+Atom on-table(b2)
 end_variable
 begin_variable
 var7
 -1
-4
-Atom clear(tile_3_2)
-Atom painted(tile_3_2, black)
-Atom painted(tile_3_2, white)
-<none of those>
+6
+Atom holding(b4)
+Atom on(b4, b1)
+Atom on(b4, b2)
+Atom on(b4, b3)
+Atom on(b4, b5)
+Atom on-table(b4)
 end_variable
 begin_variable
 var8
 -1
-4
-Atom clear(tile_1_1)
-Atom painted(tile_1_1, black)
-Atom painted(tile_1_1, white)
-<none of those>
+2
+Atom clear(b1)
+NegatedAtom clear(b1)
 end_variable
 begin_variable
 var9
 -1
-4
-Atom clear(tile_2_1)
-Atom painted(tile_2_1, black)
-Atom painted(tile_2_1, white)
-<none of those>
+2
+Atom clear(b2)
+NegatedAtom clear(b2)
 end_variable
 begin_variable
 var10
 -1
-4
-Atom clear(tile_1_3)
-Atom painted(tile_1_3, black)
-Atom painted(tile_1_3, white)
-<none of those>
-end_variable
-begin_variable
-var11
--1
-4
-Atom clear(tile_2_3)
-Atom painted(tile_2_3, black)
-Atom painted(tile_2_3, white)
-<none of those>
-end_variable
-begin_variable
-var12
--1
-4
-Atom clear(tile_1_2)
-Atom painted(tile_1_2, black)
-Atom painted(tile_1_2, white)
-<none of those>
-end_variable
-begin_variable
-var13
--1
-4
-Atom clear(tile_2_2)
-Atom painted(tile_2_2, black)
-Atom painted(tile_2_2, white)
-<none of those>
+2
+Atom clear(b4)
+NegatedAtom clear(b4)
 end_variable

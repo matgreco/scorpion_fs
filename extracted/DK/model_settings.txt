@@ -1,1 +1,1 @@
-4,16,SAGEConv,mean,Adam,0.007030595877615223
+4,8,SAGEConv,mean,Adam,0.0105

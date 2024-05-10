@@ -52,6 +52,10 @@ public:
     */
     virtual Entry remove_min() = 0;
 
+    virtual Entry get_min() {
+        std::cout << "Not implemented get_min method." << std::endl;
+    }
+
     // Return true if the open list is empty.
     virtual bool empty() const = 0;
 
