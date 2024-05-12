@@ -68,51 +68,12 @@ void FocalSearch::initialize() {
     assert(focal_list);
     log << "OK ASSERT" << endl;
 
-    /*
-    set<Evaluator *> focal_evals;
-    focal_evals.insert(focal_evaluator.get());
-    focal_list->get_path_dependent_evaluators(focal_evals);
-
-    set<Evaluator *> open_evals;
-    open_evals.insert(open_evaluator.get());
-    open_list->get_path_dependent_evaluators(open_evals);
-    */
-    /*
-      Collect path-dependent evaluators that are used for preferred operators
-      (in case they are not also used in the open list).
-    */
-    /*
-    for (const shared_ptr<Evaluator> &evaluator : preferred_operator_evaluators) {
-        evaluator->get_path_dependent_evaluators(evals);
-    }
-    */
-
-    /*
-      Collect path-dependent evaluators that are used in the f_evaluator.
-      They are usually also used in the open list and will hence already be
-      included, but we want to be sure.
-    */
-    /*
-    if (open_evaluator) {
-        open_evaluator->get_path_dependent_evaluators(evals);
-    }
-
-    path_dependent_evaluators.assign(evals.begin(), evals.end());
-    */
 
     State initial_state = state_registry.get_initial_state();
     open_evaluator->notify_initial_state(initial_state);
     focal_evaluator->notify_initial_state(initial_state);
 
     log << "Notifies initial state done" << endl;
-    // for (Evaluator *evaluator : path_dependent_evaluators) {
-    //     evaluator->notify_initial_state(initial_state);
-    // }
-
-    /*
-      Note: we consider the initial state as reached by a preferred
-      operator.
-    */
     EvaluationContext eval_context(initial_state, 0, false, &statistics);
 
     log << "INITIAL STATE IN FOCAL EVALUATOR" << eval_context.get_evaluator_value_or_infinity(focal_evaluator.get()) << endl;
@@ -154,21 +115,15 @@ SearchStatus FocalSearch::step() {
         if (focal_list->empty()) {
             log << "Completely explored state space -- no solution!" << endl;
             return FAILED;
-        }
-        /*
-        StateID id_temp = focal_list->get_min();
-        State s_temp = state_registry.lookup_state(id_temp);
-        cout << "-- el nodo minimo es " << s_temp.get_id()  << " con f " << f_value[s_temp] << endl;
-        */
-        
+        }       
         StateID id = focal_list->remove_min();
         State s = state_registry.lookup_state(id);
-        cout << "-- el nodo extraido es " << s.get_id() << " con f " << f_value[s] << endl;
+        //cout << "-- el nodo extraido es " << s.get_id() << " con f " << f_value[s] << endl;
 
         f_min = count_f.begin()->first; // the min key
         count_f[f_value[s]]--;
-        cout << "SELECTED FOR EXPANSION A NODE WITH f" << f_value[s] << endl;
-        cout << "EXIST OTHERS NODES WITH THE SAME VALUE " << count_f[f_value[s]] << endl;
+        //cout << "SELECTED FOR EXPANSION A NODE WITH f" << f_value[s] << endl;
+        //cout << "EXIST OTHERS NODES WITH THE SAME VALUE " << count_f[f_value[s]] << endl;
         if (count_f[f_value[s]] == 0){ 
             count_f.erase(f_value[s]);
         } 
@@ -194,7 +149,7 @@ SearchStatus FocalSearch::step() {
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
-    cout << "FMIN " << f_min << " W " << w << endl;
+    //cout << "FMIN " << f_min << " W " << w << endl;
 
     vector<OperatorID> applicable_ops;
     successor_generator.generate_applicable_ops(s, applicable_ops);
@@ -252,7 +207,6 @@ SearchStatus FocalSearch::step() {
             EvaluationContext succ_eval_context(
                 succ_state, succ_g, is_preferred, &statistics);
 
-            // MG: get the admissible h value 
             f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
             
             statistics.inc_evaluated_states();
@@ -270,7 +224,7 @@ SearchStatus FocalSearch::step() {
                 count_f[f_value[succ_state]]++;
             }
             else {
-                cout << "*INSERTANDO " << succ_state.get_id() <<" SOLO EN OPEN" << endl;
+                //log << "*INSERTANDO " << succ_state.get_id() <<" SOLO EN OPEN" << endl;
                 open_list->insert(succ_eval_context, succ_state.get_id());
             }
 
@@ -343,14 +297,14 @@ SearchStatus FocalSearch::step() {
     if(!count_f.empty()){
         f_min = std::min(f_min, count_f.begin()->first);
     }
-    cout << "**El fmin al final del step es " << f_min << endl;
+    //cout << "**El fmin al final del step es " << f_min << endl;
     // while open not empty and f(head(open)) < w*fmin 
     assert(f_min < numeric_limits<int>::max());
     while(!open_list->empty() && f_value[state_registry.lookup_state(open_list->get_min())] <= w*f_min){
         // extract min from open
         StateID id = open_list->remove_min();
         State s = state_registry.lookup_state(id);
-        cout << "-- UPDATE el nodo extraido es " << s.get_id() << " con id " << id << endl;;
+        //cout << "-- UPDATE el nodo extraido es " << s.get_id() << " con id " << id << endl;;
         SearchNode s_node = search_space.get_node(s);
 
         EvaluationContext update_eval_context(s);

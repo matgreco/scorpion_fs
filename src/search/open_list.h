@@ -53,7 +53,8 @@ public:
     virtual Entry remove_min() = 0;
 
     virtual Entry get_min() {
-        std::cout << "Not implemented get_min method." << std::endl;
+        std::cerr << "Not implemented get_min method." << std::endl;
+        assert(true); //"Method get_min of the open_list class was not implemented. Replace by remove_min or implement it.
     }
 
     // Return true if the open list is empty.

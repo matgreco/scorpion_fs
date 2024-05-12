@@ -25,6 +25,7 @@ public:
             "set evaluator for jump statistics. "
             "(Optional; if no evaluator is used, jump statistics will not be displayed.)",
             plugins::ArgumentInfo::NO_DEFAULT);
+        
         add_list_option<shared_ptr<Evaluator>>(
             "preferred",
             "use preferred operators of these evaluators", "[]");
@@ -33,6 +34,7 @@ public:
             "boost",
             "boost value for preferred operator open lists", 
             "0");
+        
         add_option<double>(
             "w",
             "w suboptimality bound", 
