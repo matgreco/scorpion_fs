@@ -55,6 +55,7 @@ public:
     virtual Entry get_min() {
         std::cerr << "Not implemented get_min method." << std::endl;
         assert(true); //"Method get_min of the open_list class was not implemented. Replace by remove_min or implement it.
+        utils::exit_with(utils::ExitCode::SEARCH_CRITICAL_ERROR);
     }
 
     // Return true if the open list is empty.
