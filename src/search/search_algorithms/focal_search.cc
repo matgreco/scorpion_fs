@@ -45,8 +45,7 @@ FocalSearch::FocalSearch(const plugins::Options &opts)
       focal_evaluator(opts.get<shared_ptr<Evaluator>>("focal_eval", nullptr)),
       w(opts.get<double>("w")){
 
-        cout << opts.get_unparsed_config() << endl;
-        
+        cout << opts.get_unparsed_config() << endl;        
         
         plugins::Options focallist_opts(opts);
         focallist_opts.set("eval", focal_evaluator);
@@ -68,6 +67,11 @@ void FocalSearch::initialize() {
     assert(focal_list);
     log << "OK ASSERT" << endl;
 
+    set<Evaluator *> evals;
+    open_list->get_path_dependent_evaluators(evals);
+    focal_evaluator->get_path_dependent_evaluators(evals);
+    path_dependent_evaluators.assign(evals.begin(), evals.end());
+ 
 
     State initial_state = state_registry.get_initial_state();
     open_evaluator->notify_initial_state(initial_state);
@@ -188,6 +192,8 @@ SearchStatus FocalSearch::step() {
         for (Evaluator *evaluator : path_dependent_evaluators) {
             evaluator->notify_state_transition(s, op_id, succ_state);
         }
+        
+
 
         // Previously encountered dead end. Don't re-evaluate.
         if (succ_node.is_dead_end())
@@ -208,6 +214,7 @@ SearchStatus FocalSearch::step() {
                 succ_state, succ_g, is_preferred, &statistics);
 
             f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
+            //log << "** OPEN f value = " << f_value[succ_state] << " for the succ state" << succ_state.get_id() << endl;
             
             statistics.inc_evaluated_states();
 
@@ -222,10 +229,11 @@ SearchStatus FocalSearch::step() {
             if(f_value[succ_state] <= w * f_min){
                 focal_list->insert(succ_eval_context, succ_state.get_id());
                 count_f[f_value[succ_state]]++;
+                //log << "-- Node inserted into FOCAL with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
             }
             else {
-                //log << "*INSERTANDO " << succ_state.get_id() <<" SOLO EN OPEN" << endl;
                 open_list->insert(succ_eval_context, succ_state.get_id());
+                //log << "++ Node inserted into OPEN with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
             }
 
 

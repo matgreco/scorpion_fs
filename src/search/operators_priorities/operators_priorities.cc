@@ -34,6 +34,9 @@ OpPrioritiesHeuristic::OpPrioritiesHeuristic(
         ++i;
     }
     cout << "*********************************** OP PRIORITIES TYPE " << strategy_name << endl;
+
+
+    
     successor_generator =
             utils::make_unique_ptr<successor_generator::SuccessorGenerator>(
                 task_proxy);
