@@ -27,6 +27,7 @@ class FocalSearch : public SearchAlgorithm {
     std::shared_ptr<Evaluator> focal_evaluator;
 
     PerStateInformation<int> f_value;
+    PerStateInformation<bool> in_focal;
     int f_min;
     double w;
 

@@ -85,7 +85,7 @@ void FocalSearch::initialize() {
 
     statistics.inc_evaluated_states();
 
-    if (focal_list->is_dead_end(eval_context)) {
+    if (open_list->is_dead_end(eval_context)) {
         log << "Initial state is a dead end." << endl;
     } else {
         if (search_progress.check_progress(eval_context))
@@ -95,11 +95,13 @@ void FocalSearch::initialize() {
         node.open_initial();
 
         focal_list->insert(eval_context, initial_state.get_id());
-        
+        in_focal[initial_state] = true;
+
         int h_admissible = eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
         f_value[initial_state] = 0 + h_admissible;
 
         count_f[f_value[initial_state]] ++;
+        f_min = f_value[initial_state];
     }
     cout << "** INITIALIZED OK" << endl;
     print_initial_evaluator_values(eval_context);
@@ -114,6 +116,7 @@ void FocalSearch::print_statistics() const {
 }
 
 SearchStatus FocalSearch::step() {
+    const int prev_f_min = f_min;
     optional<SearchNode> node;
     while (true) {
         if (focal_list->empty()) {
@@ -125,12 +128,6 @@ SearchStatus FocalSearch::step() {
         //cout << "-- el nodo extraido es " << s.get_id() << " con f " << f_value[s] << endl;
 
         f_min = count_f.begin()->first; // the min key
-        count_f[f_value[s]]--;
-        //cout << "SELECTED FOR EXPANSION A NODE WITH f" << f_value[s] << endl;
-        //cout << "EXIST OTHERS NODES WITH THE SAME VALUE " << count_f[f_value[s]] << endl;
-        if (count_f[f_value[s]] == 0){ 
-            count_f.erase(f_value[s]);
-        } 
         node.emplace(search_space.get_node(s));
 
         if (node->is_closed())
@@ -141,7 +138,15 @@ SearchStatus FocalSearch::step() {
           operators are computed when the state is expanded.
         */
         EvaluationContext eval_context(s, node->get_g(), false, &statistics);
-        
+
+        // Decrement count_f here, after confirming the entry is not stale.
+        // Stale entries (node already closed due to reopen) are skipped above;
+        // their count_f contribution was already removed at the reopen site.
+        count_f[f_value[s]]--;
+        if (count_f[f_value[s]] == 0)
+            count_f.erase(f_value[s]);
+        in_focal[s] = false;
+
         node->close();
         assert(!node->is_dead_end());
         //update_f_value_statistics(eval_context);
@@ -153,8 +158,7 @@ SearchStatus FocalSearch::step() {
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
-    //cout << "FMIN " << f_min << " W " << w << endl;
-
+    const double w_f_min = w * f_min;
     vector<OperatorID> applicable_ops;
     successor_generator.generate_applicable_ops(s, applicable_ops);
 
@@ -219,20 +223,22 @@ SearchStatus FocalSearch::step() {
             statistics.inc_evaluated_states();
 
 
-            if (focal_list->is_dead_end(succ_eval_context)) {
+            if (open_list->is_dead_end(succ_eval_context)) {
                 succ_node.mark_as_dead_end();
                 statistics.inc_dead_ends();
                 continue;
             }
             succ_node.open(*node, op, get_adjusted_cost(op));
 
-            if(f_value[succ_state] <= w * f_min){
+            if(f_value[succ_state] <= w_f_min){
                 focal_list->insert(succ_eval_context, succ_state.get_id());
                 count_f[f_value[succ_state]]++;
+                in_focal[succ_state] = true;
                 //log << "-- Node inserted into FOCAL with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
             }
             else {
                 open_list->insert(succ_eval_context, succ_state.get_id());
+                in_focal[succ_state] = false;
                 //log << "++ Node inserted into OPEN with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
             }
 
@@ -276,15 +282,30 @@ SearchStatus FocalSearch::step() {
                   rather than a recomputation of the evaluator value
                   from scratch.
                 */
-                //focal_list->insert(succ_eval_context, succ_state.get_id());
-                f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());;
+                // Bug 3 fix: save old f and focal status before overwriting f_value.
+                // If the node was open and tracked in count_f (in_focal=true), its stale
+                // focal entry will be skipped when popped (node will be closed by then),
+                // so we remove its count_f contribution here instead of at pop time.
+                int old_f = f_value[succ_state];
+                bool was_in_focal = in_focal[succ_state];
 
-                if(f_value[succ_state] <= w * f_min){
+                f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
+
+                if (was_in_focal) {
+                    count_f[old_f]--;
+                    if (count_f[old_f] == 0)
+                        count_f.erase(old_f);
+                    in_focal[succ_state] = false;
+                }
+
+                if(f_value[succ_state] <= w_f_min){
                     focal_list->insert(succ_eval_context, succ_state.get_id());
                     count_f[f_value[succ_state]]++;
+                    in_focal[succ_state] = true;
                 }
                 else {
                     open_list->insert(succ_eval_context, succ_state.get_id());
+                    in_focal[succ_state] = false;
                 }
             } else {
                 // If we do not reopen closed nodes, we just update the parent pointers.
@@ -308,16 +329,16 @@ SearchStatus FocalSearch::step() {
     //cout << "**El fmin al final del step es " << f_min << endl;
     // while open not empty and f(head(open)) < w*fmin 
     assert(f_min < numeric_limits<int>::max());
-    while(!open_list->empty() && f_value[state_registry.lookup_state(open_list->get_min())] <= w*f_min){
-        // extract min from open
-        StateID id = open_list->remove_min();
-        State s = state_registry.lookup_state(id);
-        //cout << "-- UPDATE el nodo extraido es " << s.get_id() << " con id " << id << endl;;
-        SearchNode s_node = search_space.get_node(s);
-
-        EvaluationContext update_eval_context(s);
-        focal_list->insert(update_eval_context, s.get_id());
-        count_f[f_value[s]]++;
+    if (f_min > prev_f_min) {
+        while(!open_list->empty() && f_value[state_registry.lookup_state(open_list->get_min())] <= w*f_min){
+            StateID id = open_list->remove_min();
+            State s = state_registry.lookup_state(id);
+            EvaluationContext update_eval_context(
+                s, search_space.get_node(s).get_g(), false, &statistics);
+            focal_list->insert(update_eval_context, s.get_id());
+            count_f[f_value[s]]++;
+            in_focal[s] = true;
+        }
     }
 
 
