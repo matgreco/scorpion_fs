@@ -41,6 +41,7 @@ FocalSearch::FocalSearch(const plugins::Options &opts)
 FocalSearch::FocalSearch(const plugins::Options &opts)
     : SearchAlgorithm(opts),
       reopen_closed_nodes(opts.get<bool>("reopen_closed")),
+      k(opts.get<int>("k")),
       open_evaluator(opts.get<shared_ptr<Evaluator>>("open_eval", nullptr)),
       focal_evaluator(opts.get<shared_ptr<Evaluator>>("focal_eval", nullptr)),
       w(opts.get<double>("w")){
@@ -59,10 +60,10 @@ FocalSearch::FocalSearch(const plugins::Options &opts)
 }
 
 void FocalSearch::initialize() {
-    log << "Conducting FOCAL search"
+    log << "Conducting FOCAL search (K=" << k << ")"
         << (reopen_closed_nodes ? " with" : " without")
         << " reopening closed nodes, (real) bound = " << bound
-        << "W suboptimality bound " << w 
+        << ", W suboptimality bound = " << w
         << endl;
     assert(focal_list);
     log << "OK ASSERT" << endl;
@@ -117,220 +118,142 @@ void FocalSearch::print_statistics() const {
 
 SearchStatus FocalSearch::step() {
     const int prev_f_min = f_min;
-    optional<SearchNode> node;
-    while (true) {
-        if (focal_list->empty()) {
-            log << "Completely explored state space -- no solution!" << endl;
-            return FAILED;
-        }       
-        StateID id = focal_list->remove_min();
-        State s = state_registry.lookup_state(id);
-        //cout << "-- el nodo extraido es " << s.get_id() << " con f " << f_value[s] << endl;
-
-        f_min = count_f.begin()->first; // the min key
-        node.emplace(search_space.get_node(s));
-
-        if (node->is_closed())
-            continue;
-
-        /*
-          We can pass calculate_preferred=false here since preferred
-          operators are computed when the state is expanded.
-        */
-        EvaluationContext eval_context(s, node->get_g(), false, &statistics);
-
-        // Decrement count_f here, after confirming the entry is not stale.
-        // Stale entries (node already closed due to reopen) are skipped above;
-        // their count_f contribution was already removed at the reopen site.
-        count_f[f_value[s]]--;
-        if (count_f[f_value[s]] == 0)
-            count_f.erase(f_value[s]);
-        in_focal[s] = false;
-
-        node->close();
-        assert(!node->is_dead_end());
-        //update_f_value_statistics(eval_context);
-        statistics.inc_expanded();
-        break;
-    }
-
-    const State &s = node->get_state();
-    if (check_goal_and_set_plan(s))
-        return SOLVED;
-
+    // w_f_min is fixed for the entire batch of K expansions (K-FS invariant)
     const double w_f_min = w * f_min;
-    vector<OperatorID> applicable_ops;
-    successor_generator.generate_applicable_ops(s, applicable_ops);
 
-    /*
-      TODO: When preferred operators are in use, a preferred operator will be
-      considered by the preferred operator queues even when it is pruned.
-    */
-    // NOT NEEDED BY NOW
-    //pruning_method->prune_operators(s, applicable_ops);
+    for (int batch = 0; batch < k; ++batch) {
+        // Pop the next non-stale node from FOCAL
+        bool found = false;
+        while (!focal_list->empty()) {
+            StateID id = focal_list->remove_min();
+            State s = state_registry.lookup_state(id);
+            SearchNode node = search_space.get_node(s);
 
-    // This evaluates the expanded state (again) to get preferred ops
-    // NOT NEEDED BY NOW
-    /*
-    EvaluationContext eval_context(s, node->get_g(), false, &statistics, true);
-    ordered_set::OrderedSet<OperatorID> preferred_operators;
-    for (const shared_ptr<Evaluator> &preferred_operator_evaluator : preferred_operator_evaluators) {
-        collect_preferred_operators(eval_context,
-                                    preferred_operator_evaluator.get(),
-                                    preferred_operators);
-    }
-    */
-
-    for (OperatorID op_id : applicable_ops) {
-        OperatorProxy op = task_proxy.get_operators()[op_id];
-        if ((node->get_real_g() + op.get_cost()) >= bound)
-            continue;
-        
-        State succ_state = state_registry.get_successor_state(s, op);
-        statistics.inc_generated();
-        bool is_preferred = false; //because the current implementation does not use pref opp
-
-        SearchNode succ_node = search_space.get_node(succ_state);
-
-        // check how it's works
-        for (Evaluator *evaluator : path_dependent_evaluators) {
-            evaluator->notify_state_transition(s, op_id, succ_state);
-        }
-        
-
-
-        // Previously encountered dead end. Don't re-evaluate.
-        if (succ_node.is_dead_end())
-            continue;
-
-        if (succ_node.is_new()) {
-            // We have not seen this state before.
-            // Evaluate and create a new node.
-
-            // Careful: succ_node.get_g() is not available here yet,
-            // hence the stupid computation of succ_g.
-            // TODO: Make this less fragile.
-            int succ_g = node->get_g() + get_adjusted_cost(op);
-
-
-                 
-            EvaluationContext succ_eval_context(
-                succ_state, succ_g, is_preferred, &statistics);
-
-            f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
-            //log << "** OPEN f value = " << f_value[succ_state] << " for the succ state" << succ_state.get_id() << endl;
-            
-            statistics.inc_evaluated_states();
-
-
-            if (open_list->is_dead_end(succ_eval_context)) {
-                succ_node.mark_as_dead_end();
-                statistics.inc_dead_ends();
+            if (node.is_closed())
+                // Stale entry: count_f was already decremented at reopen time
                 continue;
-            }
-            succ_node.open(*node, op, get_adjusted_cost(op));
 
-            if(f_value[succ_state] <= w_f_min){
-                focal_list->insert(succ_eval_context, succ_state.get_id());
-                count_f[f_value[succ_state]]++;
-                in_focal[succ_state] = true;
-                //log << "-- Node inserted into FOCAL with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
-            }
-            else {
-                open_list->insert(succ_eval_context, succ_state.get_id());
-                in_focal[succ_state] = false;
-                //log << "++ Node inserted into OPEN with f=" << f_value[succ_state] << " and fmin=" << f_min << endl;
-            }
+            count_f[f_value[s]]--;
+            if (count_f[f_value[s]] == 0)
+                count_f.erase(f_value[s]);
+            in_focal[s] = false;
+            node.close();
+            assert(!node.is_dead_end());
+            statistics.inc_expanded();
+            found = true;
 
+            if (check_goal_and_set_plan(s))
+                return SOLVED;
 
-            if (search_progress.check_progress(succ_eval_context)) {
-                statistics.print_checkpoint_line(succ_node.get_g());
-                //reward_progress();
-            }
-        } else if (succ_node.get_g() > node->get_g() + get_adjusted_cost(op)) {
-            // We found a new cheapest path to an open or closed state.
-            if (reopen_closed_nodes) {
-                if (succ_node.is_closed()) {
-                    /*
-                      TODO: It would be nice if we had a way to test
-                      that reopening is expected behaviour, i.e., exit
-                      with an error when this is something where
-                      reopening should not occur (e.g. A* with a
-                      consistent heuristic).
-                    */
-                    statistics.inc_reopened();
+            vector<OperatorID> applicable_ops;
+            successor_generator.generate_applicable_ops(s, applicable_ops);
+
+            for (OperatorID op_id : applicable_ops) {
+                OperatorProxy op = task_proxy.get_operators()[op_id];
+                if ((node.get_real_g() + op.get_cost()) >= bound)
+                    continue;
+
+                State succ_state = state_registry.get_successor_state(s, op);
+                statistics.inc_generated();
+
+                SearchNode succ_node = search_space.get_node(succ_state);
+
+                for (Evaluator *evaluator : path_dependent_evaluators)
+                    evaluator->notify_state_transition(s, op_id, succ_state);
+
+                if (succ_node.is_dead_end())
+                    continue;
+
+                if (succ_node.is_new()) {
+                    int succ_g = node.get_g() + get_adjusted_cost(op);
+                    EvaluationContext succ_eval_context(succ_state, succ_g, false, &statistics);
+
+                    f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
+                    statistics.inc_evaluated_states();
+
+                    if (open_list->is_dead_end(succ_eval_context)) {
+                        succ_node.mark_as_dead_end();
+                        statistics.inc_dead_ends();
+                        continue;
+                    }
+                    succ_node.open(node, op, get_adjusted_cost(op));
+
+                    if (f_value[succ_state] <= w_f_min) {
+                        focal_list->insert(succ_eval_context, succ_state.get_id());
+                        count_f[f_value[succ_state]]++;
+                        in_focal[succ_state] = true;
+                    } else {
+                        open_list->insert(succ_eval_context, succ_state.get_id());
+                        in_focal[succ_state] = false;
+                    }
+
+                    if (search_progress.check_progress(succ_eval_context))
+                        statistics.print_checkpoint_line(succ_node.get_g());
+
+                } else if (succ_node.get_g() > node.get_g() + get_adjusted_cost(op)) {
+                    if (reopen_closed_nodes) {
+                        if (succ_node.is_closed())
+                            statistics.inc_reopened();
+                        succ_node.reopen(node, op, get_adjusted_cost(op));
+
+                        EvaluationContext succ_eval_context(
+                            succ_state, succ_node.get_g(), false, &statistics);
+
+                        // Remove old count_f entry if node was in FOCAL
+                        int old_f = f_value[succ_state];
+                        bool was_in_focal = in_focal[succ_state];
+
+                        f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
+
+                        if (was_in_focal) {
+                            count_f[old_f]--;
+                            if (count_f[old_f] == 0)
+                                count_f.erase(old_f);
+                            in_focal[succ_state] = false;
+                        }
+
+                        if (f_value[succ_state] <= w_f_min) {
+                            focal_list->insert(succ_eval_context, succ_state.get_id());
+                            count_f[f_value[succ_state]]++;
+                            in_focal[succ_state] = true;
+                        } else {
+                            open_list->insert(succ_eval_context, succ_state.get_id());
+                            in_focal[succ_state] = false;
+                        }
+                    } else {
+                        succ_node.update_parent(node, op, get_adjusted_cost(op));
+                    }
                 }
-                succ_node.reopen(*node, op, get_adjusted_cost(op));
-
-                EvaluationContext succ_eval_context(
-                    succ_state, succ_node.get_g(), is_preferred, &statistics);
-
-                /*
-                  Note: our old code used to retrieve the h value from
-                  the search node here. Our new code recomputes it as
-                  necessary, thus avoiding the incredible ugliness of
-                  the old "set_evaluator_value" approach, which also
-                  did not generalize properly to settings with more
-                  than one evaluator.
-
-                  Reopening should not happen all that frequently, so
-                  the performance impact of this is hopefully not that
-                  large. In the medium term, we want the evaluators to
-                  remember evaluator values for states themselves if
-                  desired by the user, so that such recomputations
-                  will just involve a look-up by the Evaluator object
-                  rather than a recomputation of the evaluator value
-                  from scratch.
-                */
-                // Bug 3 fix: save old f and focal status before overwriting f_value.
-                // If the node was open and tracked in count_f (in_focal=true), its stale
-                // focal entry will be skipped when popped (node will be closed by then),
-                // so we remove its count_f contribution here instead of at pop time.
-                int old_f = f_value[succ_state];
-                bool was_in_focal = in_focal[succ_state];
-
-                f_value[succ_state] = succ_eval_context.get_evaluator_value_or_infinity(open_evaluator.get());
-
-                if (was_in_focal) {
-                    count_f[old_f]--;
-                    if (count_f[old_f] == 0)
-                        count_f.erase(old_f);
-                    in_focal[succ_state] = false;
-                }
-
-                if(f_value[succ_state] <= w_f_min){
-                    focal_list->insert(succ_eval_context, succ_state.get_id());
-                    count_f[f_value[succ_state]]++;
-                    in_focal[succ_state] = true;
-                }
-                else {
-                    open_list->insert(succ_eval_context, succ_state.get_id());
-                    in_focal[succ_state] = false;
-                }
-            } else {
-                // If we do not reopen closed nodes, we just update the parent pointers.
-                // Note that this could cause an incompatibility between
-                // the g-value and the actual path that is traced back.
-                succ_node.update_parent(*node, op, get_adjusted_cost(op));
             }
+
+            break; // one expansion done; advance to next batch slot
         }
+
+        if (!found)
+            break; // FOCAL exhausted; stop batch early
     }
-    // CHECK THIS BECAUSE IN THIS PART OF THE CODE I NEED TO ACCESS TO THE MIN F VALUE IN THE OPEN (WHICH DOEST'N HAVE THE METHOD TO ACCESS THE MIN, ONLY POP)
-    //fmin = std::min(count_f.begin()->first, open_list-> )
+
+    // Recompute f_min once after all K expansions
     f_min = numeric_limits<int>::max();
-    if (!open_list->empty()){
+    if (!open_list->empty()) {
         StateID id_min_open = open_list->get_min();
         State s_min_open = state_registry.lookup_state(id_min_open);
-        f_min = std::min(f_min, f_value[s_min_open]); // the minimum betweet open and count_f
+        f_min = min(f_min, f_value[s_min_open]);
     }
-    if(!count_f.empty()){
-        f_min = std::min(f_min, count_f.begin()->first);
+    if (!count_f.empty())
+        f_min = min(f_min, count_f.begin()->first);
+
+    if (focal_list->empty() && open_list->empty()) {
+        log << "Completely explored state space -- no solution!" << endl;
+        return FAILED;
     }
-    //cout << "**El fmin al final del step es " << f_min << endl;
-    // while open not empty and f(head(open)) < w*fmin 
+
     assert(f_min < numeric_limits<int>::max());
+
+    // Transfer nodes from OPEN to FOCAL for the new (larger) f_min
     if (f_min > prev_f_min) {
-        while(!open_list->empty() && f_value[state_registry.lookup_state(open_list->get_min())] <= w*f_min){
+        while (!open_list->empty() &&
+               f_value[state_registry.lookup_state(open_list->get_min())] <= w * f_min) {
             StateID id = open_list->remove_min();
             State s = state_registry.lookup_state(id);
             EvaluationContext update_eval_context(
@@ -340,7 +263,6 @@ SearchStatus FocalSearch::step() {
             in_focal[s] = true;
         }
     }
-
 
     return IN_PROGRESS;
 }

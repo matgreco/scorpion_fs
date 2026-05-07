@@ -37,8 +37,12 @@ public:
         
         add_option<double>(
             "w",
-            "w suboptimality bound", 
+            "w suboptimality bound",
             "2.0");
+        add_option<int>(
+            "k",
+            "number of nodes expanded per step (K-Focal Search); k=1 is standard focal search",
+            "1");
         focal_search::add_options_to_feature(*this);
         
 

@@ -462,6 +462,16 @@ create_fast_downward_library(
     DEPENDENCY_ONLY
 )
 
+create_fast_downward_library(
+    NAME type_based_wastar
+    HELP "Type-based Weighted A* (TYPE WA*)"
+    SOURCES
+        search_algorithms/type_based_wastar
+    DEPENDS
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
 
 create_fast_downward_library(
     NAME plugin_iw
@@ -543,6 +553,15 @@ create_fast_downward_library(
     DEPENDS
         focal_search
         search_common
+)
+
+create_fast_downward_library(
+    NAME plugin_type_based_wastar
+    HELP "Type-based Weighted A* plugin"
+    SOURCES
+        search_algorithms/plugin_type_based_wastar
+    DEPENDS
+        type_based_wastar
 )
 
 create_fast_downward_library(

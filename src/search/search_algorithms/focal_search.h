@@ -19,6 +19,7 @@ class Feature;
 namespace focal_search {
 class FocalSearch : public SearchAlgorithm {
     const bool reopen_closed_nodes;
+    const int k;
 
     std::unique_ptr<StateOpenList> focal_list;
     std::unique_ptr<StateOpenList> open_list;
