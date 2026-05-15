@@ -41,7 +41,7 @@ try:
 except KeyError:
     REVISION_CACHE = Path(get_default_data_dir()) / "revision-cache"
 
-REV = "HEAD"  # will be replaced after push
+REV = "b2fc07f47"
 
 # ---------------------------------------------------------------------------
 # Suite: 24 IPC opt-track domains (IPC 2014 & 2018)
