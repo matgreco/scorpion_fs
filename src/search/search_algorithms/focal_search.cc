@@ -141,7 +141,7 @@ SearchStatus FocalSearch::step() {
                 vector<OperatorID> empty_pref;
                 optional<EvaluationContext> opt_parent_ctx;
                 if (preferred_evaluator) {
-                    opt_parent_ctx.emplace(s, node.get_g(), false, &statistics);
+                    opt_parent_ctx.emplace(s, node.get_g(), false, &statistics, true);
                     pref_ops = &opt_parent_ctx->get_preferred_operators(preferred_evaluator.get());
                 } else {
                     pref_ops = &empty_pref;
