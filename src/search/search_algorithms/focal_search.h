@@ -22,19 +22,20 @@ class FocalSearch : public SearchAlgorithm {
     const int k;
 
     std::unique_ptr<StateOpenList> focal_list;
+    std::unique_ptr<StateOpenList> focal_pref;
     std::unique_ptr<StateOpenList> open_list;
     std::map<int, int> count_f;
     std::shared_ptr<Evaluator> open_evaluator;
     std::shared_ptr<Evaluator> focal_evaluator;
+    std::shared_ptr<Evaluator> preferred_evaluator;
 
     PerStateInformation<int> f_value;
     PerStateInformation<bool> in_focal;
+    PerStateInformation<bool> generated_by_pref;
     int f_min;
     double w;
 
     std::vector<Evaluator *> path_dependent_evaluators;
-    //std::vector<std::shared_ptr<Evaluator>> preferred_operator_evaluators;
-    //std::shared_ptr<Evaluator> lazy_evaluator;
 
     //std::shared_ptr<PruningMethod> pruning_method;
 
