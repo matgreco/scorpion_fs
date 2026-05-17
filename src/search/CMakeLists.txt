@@ -472,6 +472,18 @@ create_fast_downward_library(
     DEPENDENCY_ONLY
 )
 
+create_fast_downward_library(
+    NAME typed_focal_search
+    HELP "Typed Focal Search with bucket-based random selection"
+    SOURCES
+        search_algorithms/typed_focal_search
+    DEPENDS
+        null_pruning_method
+        ordered_set
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
 
 create_fast_downward_library(
     NAME plugin_iw
@@ -562,6 +574,16 @@ create_fast_downward_library(
         search_algorithms/plugin_type_based_wastar
     DEPENDS
         type_based_wastar
+)
+
+create_fast_downward_library(
+    NAME plugin_typed_focal
+    HELP "Typed Focal Search plugin"
+    SOURCES
+        search_algorithms/plugin_typed_focal_search
+    DEPENDS
+        typed_focal_search
+        search_common
 )
 
 create_fast_downward_library(
