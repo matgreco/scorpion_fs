@@ -484,6 +484,18 @@ create_fast_downward_library(
     DEPENDENCY_ONLY
 )
 
+create_fast_downward_library(
+    NAME typed_focal_hg_search
+    HELP "Typed Focal HG Search with (h,g) bucket keys and random bucket selection"
+    SOURCES
+        search_algorithms/typed_focal_hg_search
+    DEPENDS
+        null_pruning_method
+        ordered_set
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
 
 create_fast_downward_library(
     NAME plugin_iw
@@ -583,6 +595,16 @@ create_fast_downward_library(
         search_algorithms/plugin_typed_focal_search
     DEPENDS
         typed_focal_search
+        search_common
+)
+
+create_fast_downward_library(
+    NAME plugin_typed_focal_hg
+    HELP "Typed Focal HG Search plugin"
+    SOURCES
+        search_algorithms/plugin_typed_focal_hg_search
+    DEPENDS
+        typed_focal_hg_search
         search_common
 )
 
