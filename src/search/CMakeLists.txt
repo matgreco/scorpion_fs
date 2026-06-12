@@ -498,6 +498,18 @@ create_fast_downward_library(
 
 
 create_fast_downward_library(
+    NAME discrepancy_focal_search
+    HELP "Discrepancy Focal Search with alternating h/pref/discrepancy views"
+    SOURCES
+        search_algorithms/discrepancy_focal_search
+    DEPENDS
+        null_pruning_method
+        ordered_set
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
+create_fast_downward_library(
     NAME plugin_iw
     HELP "Iterative width search"
     SOURCES
@@ -605,6 +617,16 @@ create_fast_downward_library(
         search_algorithms/plugin_typed_focal_hg_search
     DEPENDS
         typed_focal_hg_search
+        search_common
+)
+
+create_fast_downward_library(
+    NAME plugin_discrepancy_focal
+    HELP "Discrepancy Focal Search plugin"
+    SOURCES
+        search_algorithms/plugin_discrepancy_focal_search
+    DEPENDS
+        discrepancy_focal_search
         search_common
 )
 
