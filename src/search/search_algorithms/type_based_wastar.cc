@@ -3,9 +3,11 @@
 #include "../evaluation_context.h"
 #include "../evaluator.h"
 #include "../plugins/options.h"
+#include "../plugins/plugin.h"
 #include "../task_utils/successor_generator.h"
 #include "../utils/logging.h"
 
+#include <algorithm>
 #include <cassert>
 #include <limits>
 #include <memory>
@@ -20,7 +22,12 @@ TypeBasedWAstar::TypeBasedWAstar(const plugins::Options &opts)
       h_evaluator(opts.get<shared_ptr<Evaluator>>("h")),
       w(opts.get<double>("w")),
       reopen_closed_nodes(opts.get<bool>("reopen_closed")),
+      focal_selection(opts.get<FocalSelection>("focal_selection")),
+      wa_tiebreaking(opts.get<WATieBreaking>("wa_tiebreaking")),
+      wa_open(WAEntryCompare{opts.get<WATieBreaking>("wa_tiebreaking")}),
+      wa_seq(0),
       step_counter(0),
+      stale_entries_dropped(0),
       rng(opts.get<int>("random_seed")) {
     if (w < 1.0) {
         cerr << "TYPE WA*: weight w must be >= 1.0" << endl;
@@ -32,12 +39,33 @@ TypeBasedWAstar::TypeBasedWAstar(const plugins::Options &opts)
 // OPEN tracking helpers
 // ---------------------------------------------------------------------------
 
+void TypeBasedWAstar::focal_types_add(const TypeKey &key) {
+    focal_types_by_f[key.first + key.second].push_back(key);
+}
+
+void TypeBasedWAstar::focal_types_remove(const TypeKey &key) {
+    auto it = focal_types_by_f.find(key.first + key.second);
+    if (it == focal_types_by_f.end())
+        return;
+    vector<TypeKey> &vec = it->second;
+    auto pos = find(vec.begin(), vec.end(), key);
+    if (pos != vec.end()) {
+        *pos = vec.back();
+        vec.pop_back();
+    }
+    if (vec.empty())
+        focal_types_by_f.erase(it);
+}
+
 void TypeBasedWAstar::add_to_open(const State &state, int g, int h) {
-    wa_open.push({g + w * h, g, state.get_id()});
+    wa_open.push({g + w * h, g, h, wa_seq++, state.get_id()});
 
     TypeKey key = {h, g};
     type_buckets[key].push_back(state.get_id());
-    type_open_count[key]++;
+    int &cnt = type_open_count[key];
+    ++cnt;
+    if (focal_selection == FocalSelection::LAZY && cnt == 1)
+        focal_types_add(key);
 
     int f = g + h;
     count_f[f]++;
@@ -54,8 +82,11 @@ void TypeBasedWAstar::remove_from_open_tracking(const State &state) {
 
     auto it = type_open_count.find(key);
     if (it != type_open_count.end()) {
-        if (--it->second == 0)
+        if (--it->second == 0) {
             type_open_count.erase(it);
+            if (focal_selection == FocalSelection::LAZY)
+                focal_types_remove(key);
+        }
     }
 
     auto cit = count_f.find(f);
@@ -72,6 +103,13 @@ void TypeBasedWAstar::remove_from_open_tracking(const State &state) {
 // ---------------------------------------------------------------------------
 
 StateID TypeBasedWAstar::select_from_focal() {
+    if (focal_selection == FocalSelection::LAZY)
+        return select_from_focal_lazy();
+    return select_from_focal_scan();
+}
+
+// Original implementation: full scan of the sampled bucket on every call.
+StateID TypeBasedWAstar::select_from_focal_scan() {
     if (count_f.empty())
         return StateID::no_state;
 
@@ -108,6 +146,8 @@ StateID TypeBasedWAstar::select_from_focal() {
             if (!node.is_closed() && cached_f[s] == expected_f) {
                 valid.push_back(id);
                 survivors.push_back(id);
+            } else {
+                ++stale_entries_dropped;
             }
             // Stale entries (closed or g-updated to a different bucket) are dropped.
         }
@@ -117,6 +157,71 @@ StateID TypeBasedWAstar::select_from_focal() {
             int idx = rng.random(static_cast<int>(valid.size()));
             return valid[idx];
         }
+    }
+
+    return StateID::no_state;
+}
+
+// Paper-style implementation: uniform type among FOCAL types, uniform entry in
+// the bucket, stale entries dropped lazily (swap-and-pop) when sampled.
+StateID TypeBasedWAstar::select_from_focal_lazy() {
+    if (count_f.empty())
+        return StateID::no_state;
+
+    int fmin = count_f.begin()->first;
+    double threshold = w * static_cast<double>(fmin);
+
+    // Each iteration either returns a valid state or repairs one inconsistent
+    // type entry, so the loop terminates quickly in practice.
+    for (int attempt = 0; attempt < 1000; ++attempt) {
+        // Number of FOCAL types (types with open states and f <= w * f_min).
+        int total = 0;
+        for (const auto &[f, vec] : focal_types_by_f) {
+            if (static_cast<double>(f) > threshold)
+                break;
+            total += static_cast<int>(vec.size());
+        }
+        if (total == 0)
+            return StateID::no_state;
+
+        // Uniform choice of a FOCAL type.
+        int k = rng.random(total);
+        TypeKey key{0, 0};
+        for (const auto &[f, vec] : focal_types_by_f) {
+            if (static_cast<double>(f) > threshold)
+                break;
+            if (k < static_cast<int>(vec.size())) {
+                key = vec[k];
+                break;
+            }
+            k -= static_cast<int>(vec.size());
+        }
+        int expected_f = key.first + key.second;
+
+        auto bit = type_buckets.find(key);
+        if (bit != type_buckets.end()) {
+            vector<StateID> &bucket = bit->second;
+            while (!bucket.empty()) {
+                int idx = rng.random(static_cast<int>(bucket.size()));
+                StateID id = bucket[idx];
+                State s = state_registry.lookup_state(id);
+                SearchNode node = search_space.get_node(s);
+                if (!node.is_closed() && in_open[s] &&
+                    cached_h[s] == key.first && cached_f[s] == expected_f) {
+                    return id;
+                }
+                // Stale entry: remove in O(1) and sample again.
+                ++stale_entries_dropped;
+                bucket[idx] = bucket.back();
+                bucket.pop_back();
+            }
+            type_buckets.erase(bit);
+        }
+
+        // The bucket had no valid entry although the count said otherwise.
+        // Repair the bookkeeping for this type and try again.
+        type_open_count.erase(key);
+        focal_types_remove(key);
     }
 
     return StateID::no_state;
@@ -202,6 +307,11 @@ SearchStatus TypeBasedWAstar::do_expansion(const State &s, SearchNode &node) {
 void TypeBasedWAstar::initialize() {
     log << "Conducting TYPE WA* search, w=" << w
         << (reopen_closed_nodes ? ", reopening closed nodes" : "")
+        << ", focal_selection="
+        << (focal_selection == FocalSelection::LAZY ? "lazy" : "scan")
+        << ", wa_tiebreaking="
+        << (wa_tiebreaking == WATieBreaking::LOW_H ? "low_h" :
+            wa_tiebreaking == WATieBreaking::FIFO ? "fifo" : "low_g")
         << ", bound=" << bound << endl;
 
     assert(h_evaluator);
@@ -297,10 +407,26 @@ SearchStatus TypeBasedWAstar::step() {
 void TypeBasedWAstar::print_statistics() const {
     statistics.print_detailed_statistics();
     search_space.print_statistics();
+    log << "Type buckets: " << type_buckets.size()
+        << ", stale bucket entries dropped: " << stale_entries_dropped << endl;
 }
 
 void add_options_to_feature(plugins::Feature &feature) {
     SearchAlgorithm::add_options_to_feature(feature);
 }
+
+static plugins::TypedEnumPlugin<FocalSelection> _focal_selection_enum_plugin({
+    {"scan", "original implementation: scan the whole sampled bucket on every "
+             "exploration step to drop stale entries (O(|bucket|) per step)"},
+    {"lazy", "paper-style implementation: sample a FOCAL type and a bucket entry "
+             "uniformly, drop stale entries lazily with swap-and-pop "
+             "(expected O(1) per step)"}
+});
+
+static plugins::TypedEnumPlugin<WATieBreaking> _wa_tiebreaking_enum_plugin({
+    {"low_g", "among equal f_w prefer lower g (original implementation)"},
+    {"low_h", "among equal f_w prefer lower h, then FIFO"},
+    {"fifo", "among equal f_w take the oldest entry first (as eager_wastar)"}
+});
 
 }  // namespace type_based_wastar

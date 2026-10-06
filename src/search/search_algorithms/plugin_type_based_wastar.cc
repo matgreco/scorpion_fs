@@ -40,6 +40,16 @@ public:
             "seed for the random number generator (type and state selection)",
             "0");
 
+        add_option<type_based_wastar::FocalSelection>(
+            "focal_selection",
+            "how a state is drawn from FOCAL on exploration steps",
+            "scan");
+
+        add_option<type_based_wastar::WATieBreaking>(
+            "wa_tiebreaking",
+            "tie-breaking among equal f_w values on WA* steps",
+            "low_g");
+
         type_based_wastar::add_options_to_feature(*this);
     }
 
