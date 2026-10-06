@@ -43,7 +43,7 @@ public:
         add_option<type_based_wastar::FocalSelection>(
             "focal_selection",
             "how a state is drawn from FOCAL on exploration steps",
-            "scan");
+            "lazy");
 
         add_option<type_based_wastar::WATieBreaking>(
             "wa_tiebreaking",

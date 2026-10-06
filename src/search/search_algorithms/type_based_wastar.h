@@ -17,11 +17,12 @@
  *
  * Two implementation options are exposed for evaluation:
  *
- *   focal_selection = scan (original): every exploration step scans the whole
+ *   focal_selection = scan (original implementation, kept to reproduce old
+ *     results): every exploration step scans the whole
  *     selected bucket to drop stale entries before sampling. This costs
  *     O(|bucket|) per step, which is quadratic overall when the type system
  *     has few types (small h and g ranges, e.g. ged, openstacks).
- *   focal_selection = lazy (paper, Sec. 3 "Implementation Details"): sample a
+ *   focal_selection = lazy (default; paper, Sec. 3 "Implementation Details"): sample a
  *     type uniformly among the FOCAL types, then sample a random bucket entry;
  *     a stale entry (closed, or moved to another bucket after a g-update) is
  *     removed with swap-and-pop and sampling is repeated. Expected O(1)
