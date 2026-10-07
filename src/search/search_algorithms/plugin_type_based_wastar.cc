@@ -5,61 +5,68 @@
 using namespace std;
 
 namespace plugin_type_based_wastar {
-
 class TypeBasedWAstarFeature
     : public plugins::TypedFeature<SearchAlgorithm, type_based_wastar::TypeBasedWAstar> {
 public:
     TypeBasedWAstarFeature() : TypedFeature("type_based_wastar") {
-        document_title("Type-based Weighted A* (TYPE WA*)");
+        document_title("Type-WA* (type-based weighted A*)");
         document_synopsis(
-            "Alternates between WA* expansions (odd steps) and type-based "
-            "focal expansions (even steps). States are grouped into types by "
-            "(h-value, g-value) pairs. At each even step, a type is drawn "
-            "uniformly at random from FOCAL = {n | f(n) <= w * f_min}, then "
-            "a state is drawn uniformly at random from that type. "
-            "Guarantees w-admissible solutions when h is admissible. "
-            "Reference: Cohen, Valenzano, McIlraith, IJCAI 2021.");
+            "Bounded suboptimal search that alternates weighted A* expansions "
+            "with type-based exploration restricted to the focal list, following "
+            "Algorithm 1 of Cohen, Valenzano and McIlraith, \"Type-WA*: Using "
+            "Exploration in Bounded Suboptimal Planning\" (IJCAI 2021). "
+            "Odd steps expand an OPEN node with minimum f_w = g + floor(w*h). "
+            "Even steps compute f_min = min_{n in OPEN} g(n)+h(n), take "
+            "FOCAL = {n in OPEN | g(n)+h(n) <= w*f_min}, choose uniformly at "
+            "random one of the (h,g) types that have nodes in FOCAL and then "
+            "uniformly at random a node of that type. The goal test is "
+            "performed when a node is selected for expansion. Nodes are always "
+            "reopened when a strictly cheaper path is found. With an admissible "
+            "heuristic the solution cost is at most w times the optimal cost "
+            "(Theorem 1).");
 
         add_option<shared_ptr<Evaluator>>(
             "h",
-            "admissible heuristic (used for both WA* ordering and FOCAL bound)",
+            "admissible heuristic; it defines f_w, f = g + h and the (h, g) type system",
             plugins::ArgumentInfo::NO_DEFAULT);
-
         add_option<double>(
             "w",
-            "suboptimality bound w >= 1.0 (higher w = faster but worse solutions)",
-            "2.0");
-
-        add_option<bool>(
-            "reopen_closed",
-            "reopen closed nodes when a shorter path is found",
-            "true");
-
+            "weight and suboptimality bound, w >= 1",
+            plugins::ArgumentInfo::NO_DEFAULT,
+            plugins::Bounds("1.0", "infinity"));
         add_option<int>(
             "random_seed",
-            "seed for the random number generator (type and state selection)",
-            "0");
-
-        add_option<type_based_wastar::FocalSelection>(
-            "focal_selection",
-            "how a state is drawn from FOCAL on exploration steps",
-            "lazy");
-
-        add_option<type_based_wastar::WATieBreaking>(
-            "wa_tiebreaking",
-            "tie-breaking among equal f_w values on WA* steps",
-            "low_g");
-
+            "seed of the random number generator that draws the type and the "
+            "node in exploration steps (default 0). Runs with the same "
+            "configuration, task and seed are reproducible.",
+            "0",
+            plugins::Bounds("0", "infinity"));
         type_based_wastar::add_options_to_feature(*this);
-    }
 
-    virtual shared_ptr<type_based_wastar::TypeBasedWAstar>
-    create_component(const plugins::Options &options,
-                     const utils::Context &) const override {
-        return make_shared<type_based_wastar::TypeBasedWAstar>(options);
+        document_note(
+            "Tie-breaking in WA* steps",
+            "Among OPEN nodes with equal f_w the WA* step expands the one that "
+            "was inserted first (FIFO). A reinsertion caused by a cheaper path "
+            "counts as a new insertion. The paper does not specify the "
+            "tie-breaking; FIFO is the choice made for this implementation.");
+        document_note(
+            "Weighted f-value",
+            "f_w(n) = g(n) + floor(w*h(n)) reproduces the rounding used in the "
+            "paper's experiments with fractional weights (Section 4) so that "
+            "f_w stays integral. The theoretical definition is g(n) + w*h(n); "
+            "both coincide for integer w. The focal threshold w*f_min and "
+            "f = g + h are not rounded.");
+        document_note(
+            "Implementation",
+            "OPEN is kept as FIFO buckets ordered by f_w, plus one bucket of "
+            "nodes per (h, g) type, grouped by f = g + h. The two structures "
+            "are not synchronised: entries of closed nodes and entries left "
+            "behind by a cheaper path are discarded only when they are drawn, "
+            "and when f_min is determined by discarding stale entries from the "
+            "lowest-f buckets until an entry that is still in OPEN is found, "
+            "as described in Section 3.1, \"Implementation Details\".");
     }
 };
 
 static plugins::FeaturePlugin<TypeBasedWAstarFeature> _plugin;
-
-}  // namespace plugin_type_based_wastar
+}

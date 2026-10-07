@@ -2,49 +2,67 @@
 #define SEARCH_ALGORITHMS_TYPE_BASED_WASTAR_H
 
 /*
- * Type-based Weighted A* (TYPE WA*)
- *
- * Alternates between two expansion strategies:
- *   Odd steps  : WA* — expand the node with minimum f_w = g + w*h
- *   Even steps : Type-based focal — compute FOCAL = {n | f(n) <= w*f_min},
- *                randomly select a type (h,g bucket) from FOCAL, then
- *                randomly select a state from that type.
- *
- * The type system partitions states by (h-value, g-value) pairs.
- * Guarantees w-admissible solutions when h is admissible.
- *
- * Reference: Cohen, Valenzano, McIlraith — IJCAI 2021.
- *
- * Two implementation options are exposed for evaluation:
- *
- *   focal_selection = scan (original implementation, kept to reproduce old
- *     results): every exploration step scans the whole
- *     selected bucket to drop stale entries before sampling. This costs
- *     O(|bucket|) per step, which is quadratic overall when the type system
- *     has few types (small h and g ranges, e.g. ged, openstacks).
- *   focal_selection = lazy (default; paper, Sec. 3 "Implementation Details"): sample a
- *     type uniformly among the FOCAL types, then sample a random bucket entry;
- *     a stale entry (closed, or moved to another bucket after a g-update) is
- *     removed with swap-and-pop and sampling is repeated. Expected O(1)
- *     amortized per step. f_min stays exact through count_f.
- *
- *   wa_tiebreaking = low_g (original): among equal f_w, prefer lower g.
- *   wa_tiebreaking = low_h: among equal f_w, prefer lower h, then FIFO.
- *   wa_tiebreaking = fifo: among equal f_w, oldest entry first (this is what
- *     Fast Downward's eager_wastar does: a single bucket-based open list on
- *     g + w*h with FIFO buckets).
- *   (Enum values avoid the names "g" and "h" because those are commonly used
- *   as let-variables in the search string and would be parsed as evaluators.)
- */
+  Type-WA* (type-based weighted A*)
+
+  Cohen, Valenzano and McIlraith: "Type-WA*: Using Exploration in Bounded
+  Suboptimal Planning", IJCAI 2021 (Algorithm 1, Theorem 1 and the paragraph
+  "Implementation Details" of Section 3.1) and its supplementary material
+  (Technical Report CSRG-638, University of Toronto).
+
+  Expansion policy (Algorithm 1):
+    - Steps 1, 3, 5, ... are WA* steps: expand an OPEN node with minimum
+      f_w(n) = g(n) + floor(w * h(n)).
+    - Steps 2, 4, 6, ... are exploration steps: with
+      f_min = min_{n in OPEN} g(n) + h(n) and
+      FOCAL = {n in OPEN | g(n) + h(n) <= w * f_min},
+      choose uniformly at random one of the types (h, g) that have nodes in
+      FOCAL, then uniformly at random a node of that type.
+    - The goal test happens when a node has been selected for expansion.
+    - A strictly cheaper path updates a node that is still in OPEN and reopens
+      a node that is in CLOSED (footnote 2 of the paper).
+    With an admissible heuristic the returned plan costs at most w times the
+    optimal cost (Theorem 1).
+
+  Data structures ("Implementation Details"):
+    - OPEN ordered by f_w for the WA* steps: integer-keyed FIFO buckets with
+      the same shape as Fast Downward's best-first open list (map<int, deque>).
+      Every entry stores the g and h it was inserted with, so that an entry
+      that is no longer current (its node was closed, or was reinserted with a
+      cheaper g or a different h) is recognised and skipped when it reaches the
+      front, as the paper prescribes. Fast Downward's StateOpenList is not
+      reused because its entries carry only a StateID: a stale entry of a node
+      that is still open could not be told apart from the node's current entry.
+    - One bucket of StateIDs per type (h, g); the buckets are grouped by
+      f = g + h in a map sorted by f. All nodes of a type share f, hence FOCAL
+      is the set of buckets with f <= w * f_min. Stale entries are left in the
+      buckets and discarded lazily: when they are drawn, and when f_min is
+      computed by discarding stale entries from the back of the lowest-f
+      buckets until an entry that is still in OPEN is found. Buckets that run
+      out of entries are removed.
+    - The h value of the latest insertion of every state (PerStateInformation).
+      Together with the node's current g it identifies the current entry.
+
+  Decisions not specified by the paper (documented in the plugin as well):
+    - Tie-breaking among equal f_w in WA* steps: FIFO, the oldest insertion
+      first; a reinsertion after a cheaper path counts as a new insertion.
+      This is a choice made for this implementation, not stated by the authors.
+    - f_w uses floor(w * h) as in the authors' experiments with fractional
+      weights (Section 4); the FOCAL threshold w * f_min is not rounded.
+    - h is recomputed through an EvaluationContext whenever a node is
+      reinserted after a cheaper path (as eager_search does); path-dependent
+      evaluators are notified of every state transition.
+*/
 
 #include "../per_state_information.h"
 #include "../search_algorithm.h"
 #include "../utils/rng.h"
 
+#include <deque>
 #include <map>
 #include <memory>
-#include <queue>
+#include <optional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 class Evaluator;
@@ -54,110 +72,76 @@ class Feature;
 }
 
 namespace type_based_wastar {
-
-enum class FocalSelection {
-    SCAN,
-    LAZY
-};
-
-enum class WATieBreaking {
-    LOW_G,
-    LOW_H,
-    FIFO
-};
-
 class TypeBasedWAstar : public SearchAlgorithm {
-    // Type key: (h-value, g-value) — defines a type bucket.
-    using TypeKey = std::pair<int, int>;
-
-    struct TypeKeyHash {
-        std::size_t operator()(const TypeKey &k) const noexcept {
-            return std::hash<long long>()(
-                static_cast<long long>(k.first) * 1000003LL + k.second);
-        }
-    };
-
     std::shared_ptr<Evaluator> h_evaluator;
-    double w;
-    bool reopen_closed_nodes;
-    FocalSelection focal_selection;
-    WATieBreaking wa_tiebreaking;
+    const double w;
+    const int random_seed;
+    utils::RandomNumberGenerator rng;
 
-    // WA* open list: min-heap on f_w = g + w*h with configurable tie-breaking.
-    // Storing g_at_push lets us skip stale entries after g-updates.
-    struct WAEntry {
-        double fw;
+    /*
+      OPEN for the WA* steps: f_w -> FIFO bucket (same shape as
+      standard_scalar_open_list::BestFirstOpenList). An entry is current iff
+      its node is open with the same g and the state's latest h is entry.h.
+    */
+    struct OpenEntry {
+        StateID id;
         int g;
         int h;
-        unsigned long long seq;
-        StateID id;
     };
+    std::map<int, std::deque<OpenEntry>> wastar_open;
 
-    // Returns true iff a has LOWER priority than b (std::priority_queue semantics).
-    struct WAEntryCompare {
-        WATieBreaking mode;
-        bool operator()(const WAEntry &a, const WAEntry &b) const {
-            if (a.fw != b.fw)
-                return a.fw > b.fw;
-            switch (mode) {
-            case WATieBreaking::LOW_H:
-                if (a.h != b.h)
-                    return a.h > b.h;      // prefer lower h
-                return a.seq > b.seq;      // then FIFO
-            case WATieBreaking::FIFO:
-                return a.seq > b.seq;      // oldest entry first
-            case WATieBreaking::LOW_G:
-            default:
-                return a.g > b.g;          // original: prefer lower g
-            }
+    /* Type buckets for the exploration steps. */
+    using TypeKey = std::pair<int, int>;   // (h, g)
+    struct TypeKeyHash {
+        std::size_t operator()(const TypeKey &key) const noexcept {
+            return std::hash<long long>()(
+                (static_cast<long long>(key.first) << 32) ^
+                static_cast<unsigned int>(key.second));
         }
     };
-    std::priority_queue<WAEntry, std::vector<WAEntry>, WAEntryCompare> wa_open;
-    unsigned long long wa_seq;
+    struct TypeBucket {
+        int h;
+        int g;
+        std::vector<StateID> entries;
+    };
+    // f = g + h -> the buckets of the types with that f (never empty vectors).
+    std::map<int, std::vector<TypeBucket>> buckets_by_f;
+    // (h, g) -> position of its bucket within buckets_by_f[h + g].
+    std::unordered_map<TypeKey, int, TypeKeyHash> bucket_position;
 
-    // Type buckets: (h, g) -> StateIDs currently believed to be in OPEN.
-    // Closed states are pruned lazily when a bucket is sampled.
-    std::unordered_map<TypeKey, std::vector<StateID>, TypeKeyHash> type_buckets;
+    // h value of the latest insertion of each state (-1: never inserted).
+    PerStateInformation<int> latest_h;
 
-    // Exact count of open states per type key (for efficient FOCAL enumeration).
-    std::unordered_map<TypeKey, int, TypeKeyHash> type_open_count;
-
-    // LAZY mode only: types with at least one open state, grouped by f = h + g.
-    // FOCAL types are exactly the entries with f <= w * f_min.
-    std::map<int, std::vector<TypeKey>> focal_types_by_f;
-
-    // Exact count of open states per f = g+h value (for f_min).
-    std::map<int, int> count_f;
-
-    // Per-state data: h and f=g+h cached at the time of last insertion into OPEN.
-    PerStateInformation<int> cached_h;
-    PerStateInformation<int> cached_f;
-    // True iff the state is currently tracked as OPEN (in type_open_count / count_f).
-    PerStateInformation<bool> in_open;
-
-    long long step_counter;
-    long long stale_entries_dropped;
-    utils::RandomNumberGenerator rng;
     std::vector<Evaluator *> path_dependent_evaluators;
 
-    // Add state to OPEN data structures (wa_open + type bucket + counts).
-    void add_to_open(const State &state, int g, int h);
+    // Number of calls to step(); odd steps are WA* steps (Algorithm 1).
+    long long step_counter;
 
-    // Remove state from type bucket counts / count_f (lazy bucket vectors persist).
-    // Must be called exactly once per state, just before node.close().
-    void remove_from_open_tracking(const State &state);
+    // Additional statistics.
+    long long wastar_expansions;
+    long long exploration_expansions;
+    long long stale_open_entries;
+    long long stale_type_entries;
 
-    // LAZY mode bookkeeping for focal_types_by_f.
-    void focal_types_add(const TypeKey &key);
-    void focal_types_remove(const TypeKey &key);
+    int compute_fw(int g, int h) const;
+    bool is_current_entry(
+        const SearchNode &node, const State &state, int g, int h) const;
 
-    // Return a StateID selected uniformly-at-random from FOCAL, or StateID::no_state.
-    StateID select_from_focal();
-    StateID select_from_focal_scan();
-    StateID select_from_focal_lazy();
+    // Add an entry for the state to OPEN (f_w bucket and type bucket).
+    void insert(const State &state, int g, int h);
+    TypeBucket &get_or_create_bucket(int h, int g);
+    void remove_bucket(int f, int position);
 
-    // Shared expansion logic: close node, generate successors, insert into OPEN.
-    SearchStatus do_expansion(const State &state, SearchNode &node);
+    /*
+      Discard stale entries from the back of the lowest-f buckets until an
+      entry that is still in OPEN is found. Return its f, which is the exact
+      f_min, or -1 if OPEN contains no node.
+    */
+    int clean_and_get_f_min();
+    int brute_force_f_min();   // Only used in assertions.
+
+    std::optional<SearchNode> select_wastar_node();
+    std::optional<SearchNode> select_exploration_node();
 
 protected:
     virtual void initialize() override;
@@ -165,11 +149,12 @@ protected:
 
 public:
     explicit TypeBasedWAstar(const plugins::Options &opts);
+    virtual ~TypeBasedWAstar() = default;
+
     virtual void print_statistics() const override;
 };
 
-void add_options_to_feature(plugins::Feature &feature);
-
-}  // namespace type_based_wastar
+extern void add_options_to_feature(plugins::Feature &feature);
+}
 
 #endif
