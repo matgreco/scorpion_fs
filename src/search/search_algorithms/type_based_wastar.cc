@@ -6,27 +6,31 @@
 #include "../plugins/plugin.h"
 #include "../task_utils/successor_generator.h"
 #include "../utils/logging.h"
+#include "../utils/system.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <set>
 
 using namespace std;
 
 namespace type_based_wastar {
 /*
-  Tolerance for the floating-point products w * h and w * f_min. For weights
-  with at most six decimal digits, a product that is not an integer is at
-  least 1e-6 away from the nearest integer, so the tolerance only repairs
-  representation errors such as 1.7 * 10 = 16.999999999999996.
+  The weight is interpreted with at most six decimal digits:
+  w = scaled_w / WEIGHT_SCALE exactly. With 1 <= w <= 1000 (enforced by the
+  option bounds) and non-negative int values of g, h and f, the products
+  scaled_w * h and scaled_w * f_min stay below 2^61, so f_w = g + floor(w*h)
+  and the focal test f <= w * f_min are computed exactly in 64-bit integers.
 */
-static const double EPSILON = 1e-9;
+static const long long WEIGHT_SCALE = 1000000;
 
 TypeBasedWAstar::TypeBasedWAstar(const plugins::Options &opts)
     : SearchAlgorithm(opts),
       h_evaluator(opts.get<shared_ptr<Evaluator>>("h")),
       w(opts.get<double>("w")),
+      scaled_w(0),
       random_seed(opts.get<int>("random_seed")),
       rng(random_seed),
       latest_h(-1),
@@ -35,17 +39,40 @@ TypeBasedWAstar::TypeBasedWAstar(const plugins::Options &opts)
       exploration_expansions(0),
       stale_open_entries(0),
       stale_type_entries(0) {
-    // w >= 1 is enforced by the option bounds in the plugin.
-    assert(w >= 1.0);
+    // The option bounds already enforce 1 <= w <= 1000; this check makes the
+    // requirement explicit in release builds as well.
+    if (!isfinite(w) || w < 1.0 || w > 1000.0) {
+        cerr << "Type-WA*: w must be a finite weight with 1 <= w <= 1000." << endl;
+        utils::exit_with(utils::ExitCode::SEARCH_INPUT_ERROR);
+    }
+    scaled_w = llround(w * WEIGHT_SCALE);
+    if (fabs(w * WEIGHT_SCALE - static_cast<double>(scaled_w)) > 1e-3) {
+        cerr << "Type-WA*: w must have at most six decimal digits." << endl;
+        utils::exit_with(utils::ExitCode::SEARCH_INPUT_ERROR);
+    }
 }
 
 /*
   f_w(n) = g(n) + floor(w * h(n)): the rounding used by the authors'
   experimental implementation for fractional weights (Section 4 of the paper).
   For integer weights it coincides with the theoretical g(n) + w * h(n).
+  Computed exactly with the scaled integer weight.
 */
 int TypeBasedWAstar::compute_fw(int g, int h) const {
-    return g + static_cast<int>(floor(w * h + EPSILON));
+    assert(g >= 0 && h >= 0);
+    long long floored = (scaled_w * h) / WEIGHT_SCALE;
+    long long fw = g + floored;
+    if (fw > numeric_limits<int>::max()) {
+        cerr << "Type-WA*: f_w = " << g << " + floor(" << w << " * " << h
+             << ") does not fit into an int." << endl;
+        utils::exit_with(utils::ExitCode::SEARCH_CRITICAL_ERROR);
+    }
+    return static_cast<int>(fw);
+}
+
+// FOCAL membership test f <= w * f_min, exact in integers.
+bool TypeBasedWAstar::in_focal(int f, int f_min) const {
+    return static_cast<long long>(f) * WEIGHT_SCALE <= scaled_w * f_min;
 }
 
 /*
@@ -53,6 +80,8 @@ int TypeBasedWAstar::compute_fw(int g, int h) const {
   current iff its node is still open with that g and the h of the latest
   insertion of the state is that h. Entries of closed nodes and entries left
   behind by a reinsertion with a cheaper g (or a re-evaluated h) are stale.
+  Since every reinsertion has a strictly smaller g, the g comparison alone
+  identifies the latest insertion; the h comparison is a consistency check.
 */
 bool TypeBasedWAstar::is_current_entry(
     const SearchNode &node, const State &state, int g, int h) const {
@@ -127,7 +156,6 @@ int TypeBasedWAstar::clean_and_get_f_min() {
     return -1;
 }
 
-// Minimum f over all current entries of all type buckets (assertions only).
 int TypeBasedWAstar::brute_force_f_min() {
     int f_min = -1;
     for (const auto &[f, buckets] : buckets_by_f) {
@@ -147,8 +175,8 @@ int TypeBasedWAstar::brute_force_f_min() {
 
 /*
   WA* step: the oldest entry of the lowest f_w bucket (FIFO). Entries that
-  are no longer current are skipped, as the paper prescribes for closed nodes
-  in the unsynchronised queues.
+  are no longer current are skipped: the paper prescribes this for entries of
+  closed nodes; entries superseded by a reinsertion are skipped as well.
 */
 optional<SearchNode> TypeBasedWAstar::select_wastar_node() {
     while (!wastar_open.empty()) {
@@ -188,34 +216,42 @@ optional<SearchNode> TypeBasedWAstar::select_exploration_node() {
     int f_min = clean_and_get_f_min();
     if (f_min == -1)
         return nullopt;
-    assert(f_min == brute_force_f_min());
-    double threshold = w * f_min + EPSILON;   // FOCAL: g + h <= w * f_min
+#ifndef NDEBUG
+    // Expensive check (linear in all stored entries), only with verbosity=debug.
+    if (log.is_at_least_debug())
+        assert(f_min == brute_force_f_min());
+#endif
 
     while (true) {
+        // FOCAL types: buckets with f <= w * f_min (they may hold stale entries only).
         int num_focal_types = 0;
         for (const auto &[f, buckets] : buckets_by_f) {
-            if (f > threshold)
+            if (!in_focal(f, f_min))
                 break;
             num_focal_types += static_cast<int>(buckets.size());
         }
         assert(num_focal_types > 0);
 
+        // Uniform choice of a FOCAL type.
         int choice = rng.random(num_focal_types);
-        int f = -1;
+        auto chosen = buckets_by_f.end();
         int position = -1;
-        for (const auto &[f_value, buckets] : buckets_by_f) {
-            if (f_value > threshold)
+        for (auto it = buckets_by_f.begin(); it != buckets_by_f.end(); ++it) {
+            if (!in_focal(it->first, f_min))
                 break;
-            if (choice < static_cast<int>(buckets.size())) {
-                f = f_value;
+            int num_buckets = static_cast<int>(it->second.size());
+            if (choice < num_buckets) {
+                chosen = it;
                 position = choice;
                 break;
             }
-            choice -= static_cast<int>(buckets.size());
+            choice -= num_buckets;
         }
-        assert(f != -1);
-        TypeBucket &bucket = buckets_by_f[f][position];
+        assert(chosen != buckets_by_f.end());
+        int f = chosen->first;
+        TypeBucket &bucket = chosen->second[position];
 
+        // Uniform choice of a node of the type; stale entries are discarded when drawn.
         while (!bucket.entries.empty()) {
             int k = rng.random(static_cast<int>(bucket.entries.size()));
             StateID id = bucket.entries[k];
@@ -287,7 +323,7 @@ SearchStatus TypeBasedWAstar::step() {
     }
 
     const State &s = node->get_state();
-    // Algorithm 1, line 11: the goal test is performed on the selected node.
+    // Algorithm 1, lines 11-12: the goal test is performed on the selected node.
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
@@ -346,7 +382,7 @@ SearchStatus TypeBasedWAstar::step() {
               recomputed through a fresh EvaluationContext: admissibility
               does not imply path independence, and whether a cached estimate
               is reused is the evaluator's decision. The new entry makes the
-              older entries of the state stale.
+              older entries of the node stale.
             */
             bool was_closed = succ_node.is_closed();
             int old_g = succ_node.get_g();
@@ -358,14 +394,11 @@ SearchStatus TypeBasedWAstar::step() {
                 succ_state, succ_node.get_g(), false, &statistics);
             if (succ_eval_context.is_evaluator_value_infinite(h_evaluator.get())) {
                 /*
-                  Not specified by the paper. With an admissible heuristic an
-                  infinite estimate proves that no plan passes through the
-                  state, so it is marked as a dead end (its stale entries are
-                  skipped). eager_search would leave such a node open but
-                  never reinsert it, which has the same effect on the search.
+                  Same behaviour as eager_search (OpenList::insert drops
+                  entries with an infinite estimate): the node stays open
+                  with its new g and parent but is not reinserted; its older
+                  entries are stale and will be skipped.
                 */
-                succ_node.mark_as_dead_end();
-                statistics.inc_dead_ends();
                 continue;
             }
             int succ_h = succ_eval_context.get_evaluator_value(h_evaluator.get());

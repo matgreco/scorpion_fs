@@ -11,46 +11,73 @@
 
   Expansion policy (Algorithm 1):
     - Steps 1, 3, 5, ... are WA* steps: expand an OPEN node with minimum
-      f_w(n) = g(n) + floor(w * h(n)).
+      f_w(n) = g(n) + w * h(n). (This implementation uses the rounded variant
+      g(n) + floor(w * h(n)) of the authors' experiments, see below.)
     - Steps 2, 4, 6, ... are exploration steps: with
       f_min = min_{n in OPEN} g(n) + h(n) and
       FOCAL = {n in OPEN | g(n) + h(n) <= w * f_min},
-      choose uniformly at random one of the types (h, g) that have nodes in
-      FOCAL, then uniformly at random a node of that type.
-    - The goal test happens when a node has been selected for expansion.
+      choose a type (h, g) among the types that have nodes in FOCAL, then a
+      node of that type. Algorithm 1 and the implementation paragraph say
+      "randomly"; this implementation draws both uniformly, as in the
+      Type-GBFS procedure the paper adapts (Section 2.2), so the probability
+      of a type does not depend on how many nodes it holds.
+    - The goal test happens when a node has been selected for expansion
+      (lines 11-12); a selected goal node is therefore neither closed nor
+      counted as expanded.
     - A strictly cheaper path updates a node that is still in OPEN and reopens
-      a node that is in CLOSED (footnote 2 of the paper).
+      a node that is in CLOSED (lines 18-24, footnote 2 of the paper).
     With an admissible heuristic the returned plan costs at most w times the
     optimal cost (Theorem 1).
 
   Data structures ("Implementation Details"):
     - OPEN ordered by f_w for the WA* steps: integer-keyed FIFO buckets with
-      the same shape as Fast Downward's best-first open list (map<int, deque>).
-      Every entry stores the g and h it was inserted with, so that an entry
-      that is no longer current (its node was closed, or was reinserted with a
-      cheaper g or a different h) is recognised and skipped when it reaches the
-      front, as the paper prescribes. Fast Downward's StateOpenList is not
-      reused because its entries carry only a StateID: a stale entry of a node
-      that is still open could not be told apart from the node's current entry.
+      the same shape as Fast Downward's best-first open list (map<int, deque>,
+      push_back on insertion, pop_front on removal). Every entry stores the g
+      and h it was inserted with. The paper prescribes ignoring entries of
+      nodes that are already closed when they are drawn; this implementation
+      additionally skips entries superseded by a reinsertion of the same node
+      with a cheaper g (or a re-evaluated h), so that a WA* step always
+      expands a current entry with minimum f_w. Fast Downward's StateOpenList
+      is not reused because its entries carry only a StateID: a superseded
+      entry of a node that is still open could not be told apart from the
+      node's current entry. (The BestFirstOpenList template is file-local, so
+      it cannot be instantiated with a richer entry type, and the repository's
+      weight evaluator takes an integer weight, so floor(w * h) with a
+      fractional w cannot be expressed with the existing evaluators either.)
     - One bucket of StateIDs per type (h, g); the buckets are grouped by
       f = g + h in a map sorted by f. All nodes of a type share f, hence FOCAL
       is the set of buckets with f <= w * f_min. Stale entries are left in the
       buckets and discarded lazily: when they are drawn, and when f_min is
       computed by discarding stale entries from the back of the lowest-f
       buckets until an entry that is still in OPEN is found. Buckets that run
-      out of entries are removed.
+      out of entries are removed. A cheaper path inserts the node into a
+      bucket with a smaller f, so f_min can also decrease.
     - The h value of the latest insertion of every state (PerStateInformation).
-      Together with the node's current g it identifies the current entry.
+      An entry (id, g, h) is current iff the node is open with that g and its
+      latest h is that h. Because a node is reinserted only with a strictly
+      smaller g, the pair (id, g) alone identifies the latest insertion; the
+      stored h is kept as a consistency check.
 
   Decisions not specified by the paper (documented in the plugin as well):
     - Tie-breaking among equal f_w in WA* steps: FIFO, the oldest insertion
       first; a reinsertion after a cheaper path counts as a new insertion.
-      This is a choice made for this implementation, not stated by the authors.
-    - f_w uses floor(w * h) as in the authors' experiments with fractional
-      weights (Section 4); the FOCAL threshold w * f_min is not rounded.
+      This was chosen by the maintainers of this repository; the paper does
+      not specify any tie-breaking.
+    - f_w uses floor(w * h), the rounding of the authors' experiments with
+      fractional weights (Section 4); the FOCAL threshold w * f_min and
+      f = g + h are not rounded. Both quantities are computed with exact
+      integer arithmetic: w is interpreted with at most six decimal digits
+      (scaled_w = w * 10^6) and the bounds 1 <= w <= 1000 keep every product
+      within 64 bits.
     - h is recomputed through an EvaluationContext whenever a node is
       reinserted after a cheaper path (as eager_search does); path-dependent
-      evaluators are notified of every state transition.
+      evaluators are notified of every state transition. As in eager_search,
+      a reopened node whose recomputed estimate is infinite is left open but
+      not reinserted.
+    - random_seed is declared directly (default 0, dedicated
+      utils::RandomNumberGenerator) instead of the repository's
+      add_rng_options helper, so that the default is explicit and the draws
+      cannot be perturbed by other components that use the global generator.
 */
 
 #include "../per_state_information.h"
@@ -75,6 +102,8 @@ namespace type_based_wastar {
 class TypeBasedWAstar : public SearchAlgorithm {
     std::shared_ptr<Evaluator> h_evaluator;
     const double w;
+    // w * WEIGHT_SCALE as an integer; w is interpreted with six decimal digits.
+    long long scaled_w;
     const int random_seed;
     utils::RandomNumberGenerator rng;
 
@@ -124,6 +153,7 @@ class TypeBasedWAstar : public SearchAlgorithm {
     long long stale_type_entries;
 
     int compute_fw(int g, int h) const;
+    bool in_focal(int f, int f_min) const;
     bool is_current_entry(
         const SearchNode &node, const State &state, int g, int h) const;
 
@@ -138,7 +168,12 @@ class TypeBasedWAstar : public SearchAlgorithm {
       f_min, or -1 if OPEN contains no node.
     */
     int clean_and_get_f_min();
-    int brute_force_f_min();   // Only used in assertions.
+    /*
+      Minimum f over all current entries, by scanning every bucket. Only used
+      by an assertion in debug builds with verbosity=debug (it makes every
+      exploration step linear in the number of stored entries).
+    */
+    int brute_force_f_min();
 
     std::optional<SearchNode> select_wastar_node();
     std::optional<SearchNode> select_exploration_node();
