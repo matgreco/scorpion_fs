@@ -70,10 +70,11 @@ void FocalSearch::initialize() {
     path_dependent_evaluators.assign(evals.begin(), evals.end());
 
     State initial_state = state_registry.get_initial_state();
-    open_evaluator->notify_initial_state(initial_state);
-    focal_evaluator->notify_initial_state(initial_state);
-    if (preferred_evaluator && preferred_evaluator != focal_evaluator)
-        preferred_evaluator->notify_initial_state(initial_state);
+    // Notify the path-dependent evaluators themselves (e.g. a landmark
+    // heuristic nested in sum([g(), h])), as eager_search does. Notifying only
+    // the top-level evaluators left nested ones uninitialised.
+    for (Evaluator *evaluator : path_dependent_evaluators)
+        evaluator->notify_initial_state(initial_state);
 
     EvaluationContext eval_context(initial_state, 0, false, &statistics);
     statistics.inc_evaluated_states();
@@ -246,8 +247,25 @@ SearchStatus FocalSearch::step() {
             break; // FOCAL exhausted; stop batch early
     }
 
+    /*
+      Entries of open_list only carry a StateID. After a cheaper path the node
+      is reinserted (into FOCAL or OPEN) and its old entry becomes stale:
+      skip entries whose node is closed or already in FOCAL.
+    */
+    auto skip_stale_open_entries = [&]() {
+            while (!open_list->empty()) {
+                State s = state_registry.lookup_state(open_list->get_min());
+                if (search_space.get_node(s).is_closed() || in_focal[s]) {
+                    open_list->remove_min();
+                    continue;
+                }
+                break;
+            }
+        };
+
     // Recompute f_min once after all K expansions
     f_min = numeric_limits<int>::max();
+    skip_stale_open_entries();
     if (!open_list->empty()) {
         StateID id_min_open = open_list->get_min();
         State s_min_open = state_registry.lookup_state(id_min_open);
@@ -256,17 +274,19 @@ SearchStatus FocalSearch::step() {
     if (!count_f.empty())
         f_min = min(f_min, count_f.begin()->first);
 
-    if (focal_pref->empty() && focal_list->empty() && open_list->empty()) {
+    if (f_min == numeric_limits<int>::max()) {
+        // No current entry in OPEN or FOCAL.
         log << "Completely explored state space -- no solution!" << endl;
         return FAILED;
     }
 
-    assert(f_min < numeric_limits<int>::max());
-
     // Transfer nodes from OPEN to FOCAL for the new (larger) f_min
     if (f_min > prev_f_min) {
-        while (!open_list->empty() &&
-               f_value[state_registry.lookup_state(open_list->get_min())] <= w * f_min) {
+        while (true) {
+            skip_stale_open_entries();
+            if (open_list->empty() ||
+                f_value[state_registry.lookup_state(open_list->get_min())] > w * f_min)
+                break;
             StateID id = open_list->remove_min();
             State s = state_registry.lookup_state(id);
             EvaluationContext update_eval_context(

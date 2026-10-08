@@ -463,6 +463,17 @@ create_fast_downward_library(
 )
 
 create_fast_downward_library(
+    NAME type_multi_focal_search
+    HELP "Type multi focal search (TypeMFS)"
+    SOURCES
+        search_algorithms/type_multi_focal_search
+    DEPENDS
+        ordered_set
+        successor_generator
+    DEPENDENCY_ONLY
+)
+
+create_fast_downward_library(
     NAME type_based_wastar
     HELP "Type-based Weighted A* (TYPE WA*)"
     SOURCES
@@ -589,6 +600,15 @@ create_fast_downward_library(
     DEPENDS
         focal_search
         search_common
+)
+
+create_fast_downward_library(
+    NAME plugin_type_mfs
+    HELP "Type multi focal search plugin"
+    SOURCES
+        search_algorithms/plugin_type_multi_focal_search
+    DEPENDS
+        type_multi_focal_search
 )
 
 create_fast_downward_library(
