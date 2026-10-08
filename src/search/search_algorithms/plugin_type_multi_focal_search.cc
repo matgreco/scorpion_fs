@@ -62,6 +62,18 @@ public:
             "the open list. After every expansion the nodes of the open list with "
             "f <= w * f_min are moved into FOCAL (all focal lists, the type bucket "
             "and, if applicable, the preferred list).");
+        document_note(
+            "Bound",
+            "A node that entered FOCAL stays there even if f_min later decreases "
+            "through a reopened node (sticky FOCAL): f <= w * f_min <= w * C* "
+            "held when it entered. The goal node is detected at selection and is "
+            "not counted as expanded; the per-list and type expansion counters "
+            "add up to the number of expanded states.");
+        document_note(
+            "Preferred list",
+            "With preferred=[...], every focal step takes its node from the "
+            "preferred list whenever it has one, so the focal lists only serve "
+            "when no preferred node is left. The default (empty) disables it.");
     }
 };
 

@@ -23,6 +23,11 @@
   a closed one, recomputing h and deciding anew whether the node belongs to
   FOCAL or to the rest of OPEN. Every expanded node satisfied f <= w * f_min
   when it entered FOCAL, hence any returned plan costs at most w * optimal.
+  A node that entered FOCAL stays there even if f_min later decreases through
+  a reopened node (sticky FOCAL): the bound held when it entered. When the
+  preferred list is used, every focal step takes its node from there whenever
+  it has one, so the focal lists only serve when no preferred node is left.
+  The goal node is detected at selection and not counted as expanded.
 
   Data structures (all with the same shape, and the same lazy handling of
   stale entries, as type_based_wastar):
@@ -129,10 +134,11 @@ class TypeMultiFocalSearch : public SearchAlgorithm {
 
     // Remove stale entries from the front of a queue; return its first current entry, if any.
     std::optional<Entry> current_front(Queue &queue, bool expected_in_focal);
+    static void pop_front(Queue &queue);
     int clean_and_get_focal_f_min();   // via the lowest-f type buckets
     void update_f_min_and_fill_focal();
 
-    std::optional<SearchNode> select_focal_node(std::string &origin);
+    std::optional<SearchNode> select_focal_node(int &list_index);   // -1: preferred list
     std::optional<SearchNode> select_type_node();
 
 protected:

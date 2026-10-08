@@ -92,8 +92,9 @@ void TypeMultiFocalSearch::insert_into_focal(
     in_focal[state] = true;
     latest_h[state] = h;
     for (size_t i = 0; i < focal_evaluators.size(); ++i) {
-        // An infinite focal estimate is not reliable: the node stays in FOCAL
-        // with the lowest priority instead of being dropped.
+        // Only the admissible h decides dead ends: an infinite focal estimate
+        // gets the lowest priority (key INT_MAX) instead of being dropped, so
+        // the focal lists always agree with the type buckets.
         int key = eval_context.get_evaluator_value_or_infinity(focal_evaluators[i].get());
         focal_lists[i][key].push_back({id, g, h});
     }
@@ -131,6 +132,14 @@ void TypeMultiFocalSearch::remove_bucket(int f, int position) {
     buckets.pop_back();
     if (buckets.empty())
         buckets_by_f.erase(it);
+}
+
+void TypeMultiFocalSearch::pop_front(Queue &queue) {
+    assert(!queue.empty());
+    auto it = queue.begin();
+    it->second.pop_front();
+    if (it->second.empty())
+        queue.erase(it);
 }
 
 // Discard stale entries from the front of the queue; return the first current entry.
@@ -195,25 +204,21 @@ void TypeMultiFocalSearch::update_f_min_and_fill_focal() {
         if (!open_front || !within_bound(open_front->g + open_front->h))
             break;
         Entry entry = *open_front;
-        open_list.begin()->second.pop_front();
-        if (open_list.begin()->second.empty())
-            open_list.erase(open_list.begin());
+        pop_front(open_list);
         State state = state_registry.lookup_state(entry.id);
         EvaluationContext eval_context(state, entry.g, false, &statistics);
         insert_into_focal(state, entry.g, entry.h, eval_context);
     }
 }
 
-// Focal step: preferred list first (if enabled), then the focal lists in rotation.
-optional<SearchNode> TypeMultiFocalSearch::select_focal_node(string &origin) {
+// Focal step: preferred list first (if enabled), then the focal lists in
+// rotation. list_index tells where the node came from (-1: preferred list).
+optional<SearchNode> TypeMultiFocalSearch::select_focal_node(int &list_index) {
     if (use_preferred()) {
         optional<Entry> entry = current_front(preferred_list, true);
         if (entry) {
-            preferred_list.begin()->second.pop_front();
-            if (preferred_list.begin()->second.empty())
-                preferred_list.erase(preferred_list.begin());
-            origin = "preferred";
-            ++preferred_expansions;
+            pop_front(preferred_list);
+            list_index = -1;
             State state = state_registry.lookup_state(entry->id);
             return search_space.get_node(state);
         }
@@ -223,12 +228,9 @@ optional<SearchNode> TypeMultiFocalSearch::select_focal_node(string &origin) {
         size_t i = (next_focal_list + attempt) % num_lists;
         optional<Entry> entry = current_front(focal_lists[i], true);
         if (entry) {
-            focal_lists[i].begin()->second.pop_front();
-            if (focal_lists[i].begin()->second.empty())
-                focal_lists[i].erase(focal_lists[i].begin());
+            pop_front(focal_lists[i]);
             next_focal_list = (i + 1) % num_lists;
-            origin = "focal list " + to_string(i);
-            ++focal_expansions[i];
+            list_index = static_cast<int>(i);
             State state = state_registry.lookup_state(entry->id);
             return search_space.get_node(state);
         }
@@ -267,7 +269,6 @@ optional<SearchNode> TypeMultiFocalSearch::select_type_node() {
                         << " type=(h=" << bucket.h << ",g=" << bucket.g << ")"
                         << " state " << id << endl;
                 }
-                ++type_expansions;
                 return node;
             }
             bucket.entries[k] = bucket.entries.back();
@@ -317,29 +318,31 @@ void TypeMultiFocalSearch::initialize() {
 SearchStatus TypeMultiFocalSearch::step() {
     ++step_counter;
     bool type_step = (step_counter % 2 == 0);   // odd: focal step, even: type step
-    string origin;
-    optional<SearchNode> node = type_step ? select_type_node() : select_focal_node(origin);
+    int list_index = -1;   // focal steps: -1 = preferred list, otherwise focal list index
+    optional<SearchNode> node = type_step ? select_type_node() : select_focal_node(list_index);
     if (!node) {
-        // FOCAL has no current node: refill it from open_list and try again.
-        update_f_min_and_fill_focal();
-        optional<SearchNode> retry = type_step ? select_type_node() : select_focal_node(origin);
-        if (!retry) {
-            log << "Completely explored state space -- no solution!" << endl;
-            return FAILED;
-        }
-        node.emplace(*retry);   // SearchNode is copy-constructible but not assignable
+        // After update_f_min_and_fill_focal, FOCAL is empty only if OPEN is empty.
+        log << "Completely explored state space -- no solution!" << endl;
+        return FAILED;
     }
 
     const State &s = node->get_state();
     if (log.is_at_least_debug() && !type_step) {
-        log << "Focal step " << step_counter << " (" << origin << "): state " << s.get_id()
-            << " g=" << node->get_g() << " h=" << latest_h[s] << endl;
+        log << "Focal step " << step_counter << " ("
+            << (list_index < 0 ? string("preferred") : "focal list " + to_string(list_index))
+            << "): state " << s.get_id() << " g=" << node->get_g() << " h=" << latest_h[s] << endl;
     }
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
     node->close();
     statistics.inc_expanded();
+    if (type_step)
+        ++type_expansions;
+    else if (list_index < 0)
+        ++preferred_expansions;
+    else
+        ++focal_expansions[list_index];
 
     // Preferred operators of the expanded state (only if the preferred list is used).
     ordered_set::OrderedSet<OperatorID> preferred_operators;
